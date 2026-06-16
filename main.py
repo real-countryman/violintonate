@@ -10,11 +10,13 @@ def main():
         print("Usage: python3 main.py <audio_file>")
         return
 
-    audio = Audio(argv[1], 60, 30, 10)
+    audio = Audio(argv[1], 60, (4,4), 20)
 
-    pitches, pitch_times = get_pitches_and_times(audio)
+    pitches, times = audio.get_pitches_and_times(0, 0, 10)
     
-    print(f"{pitches} \n ---------------------- \n {pitch_times}")
+    np.set_printoptions(threshold=np.inf)
+    print(pitches)
+    print(times)
 
 if __name__ == "__main__":
     main()
