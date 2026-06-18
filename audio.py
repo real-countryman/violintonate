@@ -15,9 +15,6 @@ class Audio:
     def _seconds_per_bar(self) -> float:
         """
         Calculates how many seconds per bar
-        
-        Args:
-            audio: The audio dataclass to calculate
 
         Returns:
             How many seconds per bar
@@ -40,12 +37,22 @@ class Audio:
         offset = self._seconds_per_bar / self.time_signature[0] * msr_offset
         return self._seconds_per_bar * measure + offset
 
-    def get_pitches_and_times(self, start_msr: int, msr_offset: int, end_msr: int) -> tuple[np.ndarray, np.ndarray]:
+    def get_pitches_and_times(self, start_msr: int, msr_offset: int, end_msr: int, get_hz=False) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Converts audio format into pitches and times
+
+        Args:
+            start_msr: The start measure number index (start at 0)
+            msr_offset: The shift in beats in measures (start at 0)
+            end_msr: The end measure number index
+            get_hz: If true, returns hz values instead of notes (391.9 instead of G4)
+                Defaults to False.
+            print_debug: If true, prints start end end time of analysys to stdout
+                Defaults to False.
+        """
         start = self._bpm_to_secs(start_msr, msr_offset)
         end = self._bpm_to_secs(end_msr, msr_offset=0)
         dur = end - start
-
-        print(f"Analyzing from {start:.3f}s to {end:.3f}s, duration {dur:.3f}s")
 
         # Load audio
         # audio signal, sample rate
@@ -66,9 +73,11 @@ class Audio:
         pitches = f0[voiced_flag]
         pitch_times = times[voiced_flag]
 
-        notes = librosa.midi_to_note(
-            np.round(librosa.hz_to_midi(pitches)).astype(int)
-        )
-        print(notes)
+        if not get_hz:
+            notes = librosa.midi_to_note(
+                np.round(librosa.hz_to_midi(pitches)).astype(int)
+            )
 
-        return pitches, pitch_times # Hz values, times in seconds
+            return notes, pitch_times
+        else:
+            return pitches, pitch_times

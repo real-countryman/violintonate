@@ -11,7 +11,7 @@ def main():
 
     audio = Audio(argv[1], 110, (4,4), 6)
 
-    pitches, times = audio.get_pitches_and_times(4, 1, 5)
+    pitches, times = audio.get_pitches_and_times(0, 0, 1)
     
     np.set_printoptions(threshold=np.inf)
     print(pitches)
