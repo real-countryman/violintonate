@@ -44,9 +44,12 @@ class Audio:
         start = self._bpm_to_secs(start_msr, msr_offset)
         end = self._bpm_to_secs(end_msr, msr_offset=0)
         dur = end - start
+
+        print(f"Analyzing from {start:.3f}s to {end:.3f}s, duration {dur:.3f}s")
+
         # Load audio
         # audio signal, sample rate
-        y, sr = librosa.load(self.path, sr=None, offset=start, duration=dur)
+        y, sr = librosa.load(self.path, sr=None, offset=start, duration=dur, mono=True)
 
         # Estimate pitch / fundamental frequency
         f0, voiced_flag, voiced_prob = librosa.pyin(
@@ -57,10 +60,15 @@ class Audio:
         )
 
         # Time axis for each pitch estimate
-        times = librosa.times_like(f0, sr=sr)
+        times = librosa.times_like(f0, sr=sr) + start
 
         # Keep only voiced frames
         pitches = f0[voiced_flag]
         pitch_times = times[voiced_flag]
+
+        notes = librosa.midi_to_note(
+            np.round(librosa.hz_to_midi(pitches)).astype(int)
+        )
+        print(notes)
 
         return pitches, pitch_times # Hz values, times in seconds

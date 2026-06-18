@@ -1,5 +1,4 @@
 import sys
-from calculations import *
 from audio import *
 
 def main():
@@ -10,9 +9,9 @@ def main():
         print("Usage: python3 main.py <audio_file>")
         return
 
-    audio = Audio(argv[1], 60, (4,4), 20)
+    audio = Audio(argv[1], 110, (4,4), 6)
 
-    pitches, times = audio.get_pitches_and_times(0, 0, 10)
+    pitches, times = audio.get_pitches_and_times(4, 1, 5)
     
     np.set_printoptions(threshold=np.inf)
     print(pitches)
