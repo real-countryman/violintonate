@@ -33,7 +33,7 @@ setup:
 	@if [ -f requirements.txt ]; then $(PIP) install -r requirements.txt; fi
 
 run: setup
-	$(PYTHON_VENV) src/main.py $(ARGS)
+	$(PYTHON_VENV) -m src.main $(ARGS)
 
 test: setup
 	$(PYTHON_VENV) tests/tests.py

@@ -1,5 +1,6 @@
 import sys
-from audio import *
+from src.audio import *
+from src.xml_parsing import *
 
 def main():
     argc = len(sys.argv)
@@ -16,6 +17,11 @@ def main():
     np.set_printoptions(threshold=np.inf)
     print(pitches)
     print(times)
+
+    xml_file = Musicxml_parser("./input/Canon_in_D.mxl")
+    score_events = xml_file.extract_score_events()
+
+    print(score_events)
 
 if __name__ == "__main__":
     main()
