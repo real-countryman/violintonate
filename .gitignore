@@ -1,4 +1,3 @@
 /.venv
-*.mp3
-*.wav
-/__pycache__
+/input
+*__pycache__

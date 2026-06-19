@@ -1,8 +1,7 @@
 import unittest
-from unittest.mock import patch
 
 import numpy as np
-from audio import *
+from src.audio import Audio
 
 
 class TestAudioMethods(unittest.TestCase):
