@@ -1,5 +1,6 @@
 import math
 from dataclasses import dataclass
+from pathlib import Path
 
 import librosa
 import numpy as np
@@ -11,20 +12,36 @@ class Audio:
     time_signature: tuple[int, int]
     msr_cnt: int
 
+    def _validate(self):
+        path = Path(self.path)
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
+
+        if self.bpm <= 0:
+            raise ValueError("Bpm must be > 0")
+
+        if self.time_signature[0] <= 0 or self.time_signature[1] <= 0:
+            raise ValueError("Time signature must be at least (1/1) or more")
+        
+        if self.msr_cnt <= 0:
+            raise ValueError("Msr_cnt must be > 0")
+
     @property
     def _seconds_per_bar(self) -> float:
         """
-        Calculates how many seconds per bar
+        Calculates how much time in seconds takes one bar in sheet music
 
         Returns:
             How many seconds per bar
         """
+        self._validate()
+
         beats_per_bar = self.time_signature[0]
         return beats_per_bar * 60 / self.bpm
 
     def _bpm_to_secs(self, measure: int, msr_offset: int) -> float:
         """
-        Converts bpm to seconds taking to consideration measure number and measure offset
+        Converts concrete beat in score to seconds from start
 
         Args:
             audio: The audio dataclass to calculate
@@ -34,10 +51,21 @@ class Audio:
         Returns:
             The time in seconds
         """
-        offset = self._seconds_per_bar / self.time_signature[0] * msr_offset
+        self._validate()
+        if not 0 <= measure < self.msr_cnt:
+            raise ValueError("Argument measure must satisfy: 0 <= measure < self.msr_cnt \n"
+                             f"got: {measure}")
+        
+        beats_per_measure = self.time_signature[0]
+
+        if not 0 <= msr_offset < beats_per_measure:
+            raise ValueError("Argument msr_offset must satisfy: 0 <= msr_offset < self.time_signature[0] \n" \
+                             f"got: {msr_offset}")
+
+        offset = self._seconds_per_bar / beats_per_measure * msr_offset
         return self._seconds_per_bar * measure + offset
 
-    def get_pitches_and_times(self, start_msr: int, msr_offset: int, end_msr: int, get_hz=False) -> tuple[np.ndarray, np.ndarray]:
+    def get_pitches_and_times(self, start_msr: int, msr_offset: float, end_msr: int, get_hz=False) -> tuple[np.ndarray, np.ndarray]:
         """
         Converts audio format into pitches and times
 
@@ -50,12 +78,31 @@ class Audio:
             print_debug: If true, prints start end end time of analysys to stdout
                 Defaults to False.
         """
+        self._validate()
+        if not 0 <= start_msr < self.msr_cnt:
+            raise ValueError("Argument start_msr must satisfy: 0 <= start_msr < self.msr_cnt\n" \
+                             f"got: {start_msr}")
+        
+        beats_per_measure = self.time_signature[0]
+        if not 0 <= msr_offset < beats_per_measure:
+            raise ValueError("Argument msr_offset must satisfy: 0 <= msr_offset < self.time_signature[0]\n" \
+                             f"got: {msr_offset}")
+        
+        if not 0 <= end_msr <= self.msr_cnt:
+            raise ValueError("Argument end_msr must satisfy: 0 <= end_msr <= self.msr_cnt\n" \
+                             f"got: {end_msr}")
+        
+        if not start_msr < end_msr:
+            raise ValueError("Arguments start_msr and end_msr must satisfy: start_msr < end_msr\n" \
+                             f"got: start_msr={start_msr}, end_msr={end_msr}")
+
         start = self._bpm_to_secs(start_msr, msr_offset)
         end = self._bpm_to_secs(end_msr, msr_offset=0)
         dur = end - start
 
         # Load audio
         # audio signal, sample rate
+        path = Path(self.path)
         y, sr = librosa.load(self.path, sr=None, offset=start, duration=dur, mono=True)
 
         # Estimate pitch / fundamental frequency
