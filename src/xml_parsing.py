@@ -5,6 +5,7 @@ from pathlib import Path
 @dataclass
 class Musicxml_parser():
     path: str
+    part_idx: int = 0
 
     def extract_score_events(self):
         path = Path(self.path)
@@ -13,6 +14,17 @@ class Musicxml_parser():
             raise FileNotFoundError(f"File not found: {path}")
 
         score = converter.parse(path, format="musicxml")
+
+        if not score.parts:
+            raise ValueError("No parts found in MusicXML file")
+        
+        if self.part_idx >= len(score.parts):
+            raise IndexError(
+                f"part_index {self.part_index} out of range. "
+                f"Score has {len(score.parts)} parts."
+            )
+        
+        part = score.parts[self.part_idx]
         events = []
 
         for el in score.recurse().notesAndRests:

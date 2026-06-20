@@ -18,10 +18,11 @@ def main():
     print(pitches)
     print(times)
 
-    xml_file = Musicxml_parser("./input/Canon_in_D.mxl")
+    xml_file = Musicxml_parser("./input/xml_files/Quantum Occasu.xml", part_idx=0)
     score_events = xml_file.extract_score_events()
 
-    print(score_events)
+    for score_event in score_events:
+        print(score_event)
 
 if __name__ == "__main__":
     main()
