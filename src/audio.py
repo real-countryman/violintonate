@@ -13,6 +13,9 @@ class Audio:
     msr_cnt: int
 
     def _validate(self):
+        """
+        Helper function for validation of parameters
+        """
         path = Path(self.path)
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
@@ -65,7 +68,7 @@ class Audio:
         offset = self._seconds_per_bar / beats_per_measure * msr_offset
         return self._seconds_per_bar * measure + offset
 
-    def get_pitches_and_times(self, start_msr: int, msr_offset: float, end_msr: int, get_hz=False) -> tuple[np.ndarray, np.ndarray]:
+    def get_pitches_and_times(self, start_msr: int, msr_offset: float, end_msr: int, get_hz=True) -> tuple[np.ndarray, np.ndarray]:
         """
         Converts audio format into pitches and times
 
@@ -102,7 +105,6 @@ class Audio:
 
         # Load audio
         # audio signal, sample rate
-        path = Path(self.path)
         y, sr = librosa.load(self.path, sr=None, offset=start, duration=dur, mono=True)
 
         # Estimate pitch / fundamental frequency
@@ -116,9 +118,13 @@ class Audio:
         # Time axis for each pitch estimate
         times = librosa.times_like(f0, sr=sr) + start
 
-        # Keep only voiced frames
-        pitches = f0[voiced_flag]
-        pitch_times = times[voiced_flag]
+        # Keep only voiced and confident frames
+        mask = (voiced_flag == True) & (voiced_prob > 0.8)
+        times_clean = times[mask]
+        f0_clean = f0[mask]
+
+        pitches = f0_clean
+        pitch_times = times_clean
 
         if not get_hz:
             notes = librosa.midi_to_note(
