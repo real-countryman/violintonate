@@ -7,7 +7,7 @@ class Musicxml_parser():
     path: str
     part_idx: int = 0
 
-    def extract_score_events(self):
+    def _validate(self):
         path = Path(self.path)
 
         if not path.exists():
@@ -20,15 +20,19 @@ class Musicxml_parser():
         
         if self.part_idx >= len(score.parts):
             raise IndexError(
-                f"part_index {self.part_index} out of range. "
-                f"Score has {len(score.parts)} parts."
+                f"part_idx: {self.part_idx} out of range. "
+                f"Score has: {len(score.parts)} parts."
             )
+
+    def extract_score_events(self):
+        self._validate()
+        score = converter.parse(self.path, format="musicxml")
         
         part = score.parts[self.part_idx]
         events = []
 
-        for el in score.recurse().notesAndRests:
-            start_ql = float(el.getOffsetInHierarchy(score))
+        for el in part.recurse().notesAndRests:
+            start_ql = float(el.getOffsetInHierarchy(part))
             duration_ql = float(el.duration.quarterLength)
             end_ql = start_ql + duration_ql
 
