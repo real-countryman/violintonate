@@ -1,5 +1,6 @@
 import sys
 from src.audio import *
+from src.pitch import *
 from src.xml_parsing import *
 
 def main():
@@ -12,7 +13,7 @@ def main():
 
     audio = Audio(argv[1], 110, (4,4), 6)
 
-    pitches, times = audio.get_pitches_and_times(0, 0, 1)
+    pitches, times = Pitch_extractor(audio).get_pitches_and_times(0, 0, 1)
     
     np.set_printoptions(threshold=np.inf)
     print(pitches)
