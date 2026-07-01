@@ -70,15 +70,13 @@ class Audio:
 
     def get_pitches_and_times(self, start_msr: int, msr_offset: float, end_msr: int, get_hz=True) -> tuple[np.ndarray, np.ndarray]:
         """
-        Converts audio format into pitches and times
+        Converts audio format into pitches and times and removes unvoiced / low confidence frames.
 
         Args:
             start_msr: The start measure number index (start at 0)
             msr_offset: The shift in beats in measures (start at 0)
             end_msr: The end measure number index
             get_hz: If true, returns hz values instead of notes (391.9 instead of G4)
-                Defaults to False.
-            print_debug: If true, prints start end end time of analysys to stdout
                 Defaults to False.
         """
         self._validate()
