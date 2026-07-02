@@ -11,6 +11,9 @@ class Audio:
     time_signature: tuple[int, int]
     msr_cnt: int
 
+    def __post_init__(self):
+        self._validate()
+
     def _validate(self):
         """
         Helper function for validation of parameters
