@@ -11,6 +11,45 @@ from src.audio import Audio
 class Pitch_extractor:
     audio: Audio
 
+    def extract_pitches_and_times(self, start_msr: int, msr_offset: float, end_msr: int, get_hz=True) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Converts audio format into pitches and times and removes unvoiced / low confidence frames.
+
+        Args:
+            start_msr: The start measure number index (start at 0)
+            msr_offset: The shift in beats in measures (start at 0)
+            end_msr: The end measure number index
+            get_hz: If true, returns hz values instead of notes (391.9 instead of G4)
+                Defaults to False.
+        """
+        self._validate_measure_range(start_msr, msr_offset, end_msr)
+
+        start = self._bpm_to_secs(start_msr, msr_offset)
+        end = self._bpm_to_secs(end_msr, msr_offset=0)
+        dur = end - start
+
+        # Load audio
+        # audio signal, sample rate
+        y, sr = librosa.load(self.audio.path, sr=None, offset=start, duration=dur, mono=True)
+
+        # Estimate pitch / fundamental frequency
+        f0, voiced_flag, voiced_prob = self._extract_f0(y, sr)
+
+        # Time axis for each pitch estimate
+        times = librosa.times_like(f0, sr=sr) + start
+
+        # Keep only voiced and confident frames
+        pitches, pitch_times = self._filter_voiced_frames(f0, voiced_flag, voiced_prob, times)
+
+        if not get_hz:
+            notes = librosa.midi_to_note(
+                np.round(librosa.hz_to_midi(pitches)).astype(int)
+            )
+
+            return notes, pitch_times
+        else:
+            return pitches, pitch_times
+    
     @property
     def _seconds_per_bar(self) -> float:
         """
@@ -46,18 +85,8 @@ class Pitch_extractor:
 
         offset = self._seconds_per_bar / beats_per_measure * msr_offset
         return self._seconds_per_bar * measure + offset
-
-    def get_pitches_and_times(self, start_msr: int, msr_offset: float, end_msr: int, get_hz=True) -> tuple[np.ndarray, np.ndarray]:
-        """
-        Converts audio format into pitches and times and removes unvoiced / low confidence frames.
-
-        Args:
-            start_msr: The start measure number index (start at 0)
-            msr_offset: The shift in beats in measures (start at 0)
-            end_msr: The end measure number index
-            get_hz: If true, returns hz values instead of notes (391.9 instead of G4)
-                Defaults to False.
-        """
+    
+    def _validate_measure_range(self, start_msr: int, msr_offset: float, end_msr: int) -> None:
         if not 0 <= start_msr < self.audio.msr_cnt:
             raise ValueError("Argument start_msr must satisfy: 0 <= start_msr < self.msr_cnt\n" \
                              f"got: {start_msr}")
@@ -74,16 +103,8 @@ class Pitch_extractor:
         if not start_msr < end_msr:
             raise ValueError("Arguments start_msr and end_msr must satisfy: start_msr < end_msr\n" \
                              f"got: start_msr={start_msr}, end_msr={end_msr}")
-
-        start = self._bpm_to_secs(start_msr, msr_offset)
-        end = self._bpm_to_secs(end_msr, msr_offset=0)
-        dur = end - start
-
-        # Load audio
-        # audio signal, sample rate
-        y, sr = librosa.load(self.audio.path, sr=None, offset=start, duration=dur, mono=True)
-
-        # Estimate pitch / fundamental frequency
+        
+    def _extract_f0(self, y, sr: int):
         f0, voiced_flag, voiced_prob = librosa.pyin(
             y,
             fmin=librosa.note_to_hz("G3"),
@@ -91,10 +112,9 @@ class Pitch_extractor:
             sr=sr
         )
 
-        # Time axis for each pitch estimate
-        times = librosa.times_like(f0, sr=sr) + start
-
-        # Keep only voiced and confident frames
+        return f0, voiced_flag, voiced_prob
+    
+    def _filter_voiced_frames(self, f0, voiced_flag, voiced_prob, times):
         mask = (voiced_flag == True) & (voiced_prob > 0.8)
         times_clean = times[mask]
         f0_clean = f0[mask]
@@ -102,11 +122,4 @@ class Pitch_extractor:
         pitches = f0_clean
         pitch_times = times_clean
 
-        if not get_hz:
-            notes = librosa.midi_to_note(
-                np.round(librosa.hz_to_midi(pitches)).astype(int)
-            )
-
-            return notes, pitch_times
-        else:
-            return pitches, pitch_times
+        return pitches, pitch_times
