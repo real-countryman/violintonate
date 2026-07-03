@@ -11,9 +11,9 @@ def main():
         print("Usage: python3 main.py <audio_file>")
         return
 
-    audio = Audio(argv[1], 110, (4,4), 6)
+    audio = Audio(argv[1], 76.0, (4,4), 96)
 
-    pitches, times = Pitch_extractor(audio).extract_pitches_and_times(0, 0, 1)
+    pitches, times = Pitch_extractor(audio).extract_pitches_and_times(get_hz = False)
     
     np.set_printoptions(threshold=np.inf)
     print(pitches)

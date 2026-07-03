@@ -11,7 +11,7 @@ from src.audio import Audio
 class Pitch_extractor:
     audio: Audio
 
-    def extract_pitches_and_times(self, start_msr: int, msr_offset: float, end_msr: int, get_hz=True) -> tuple[np.ndarray, np.ndarray]:
+    def extract_pitches_and_times(self, start_msr: int = 0, msr_offset: float = 0, end_msr: int | None = None, get_hz=True) -> tuple[np.ndarray, np.ndarray]:
         """
         Converts audio format into pitches and times and removes unvoiced / low confidence frames.
 
@@ -22,6 +22,9 @@ class Pitch_extractor:
             get_hz: If true, returns hz values instead of notes (391.9 instead of G4)
                 Defaults to False.
         """
+        if end_msr is None:
+            end_msr = self.audio.msr_cnt - 1
+
         self._validate_measure_range(start_msr, msr_offset, end_msr)
 
         start = self._bpm_to_secs(start_msr, msr_offset)
