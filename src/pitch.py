@@ -1,4 +1,3 @@
-import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -7,11 +6,18 @@ import numpy as np
 
 from src.audio import Audio
 
+
 @dataclass
 class Pitch_extractor:
     audio: Audio
 
-    def extract_pitches_and_times(self, start_msr: int = 0, msr_offset: float = 0, end_msr: int | None = None, get_hz=True) -> tuple[np.ndarray, np.ndarray]:
+    def extract_pitches_and_times(
+        self,
+        start_msr: int = 0,
+        msr_offset: float = 0,
+        end_msr: int | None = None,
+        get_hz=True,
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Converts audio format into pitches and times and removes unvoiced / low confidence frames.
 
@@ -33,7 +39,9 @@ class Pitch_extractor:
 
         # Load audio
         # audio signal, sample rate
-        y, sr = librosa.load(self.audio.path, sr=None, offset=start, duration=dur, mono=True)
+        y, sr = librosa.load(
+            self.audio.path, sr=None, offset=start, duration=dur, mono=True
+        )
 
         # Estimate pitch / fundamental frequency
         f0, voiced_flag, voiced_prob = self._extract_f0(y, sr)
@@ -42,7 +50,9 @@ class Pitch_extractor:
         times = librosa.times_like(f0, sr=sr) + start
 
         # Keep only voiced and confident frames
-        pitches, pitch_times = self._filter_voiced_frames(f0, voiced_flag, voiced_prob, times)
+        pitches, pitch_times = self._filter_voiced_frames(
+            f0, voiced_flag, voiced_prob, times
+        )
 
         if not get_hz:
             notes = librosa.midi_to_note(
@@ -52,7 +62,7 @@ class Pitch_extractor:
             return notes, pitch_times
         else:
             return pitches, pitch_times
-    
+
     @property
     def _seconds_per_bar(self) -> float:
         """
@@ -77,46 +87,57 @@ class Pitch_extractor:
             The time in seconds
         """
         if not 0 <= measure < self.audio.msr_cnt:
-            raise ValueError("Argument measure must satisfy: 0 <= measure < self.msr_cnt \n"
-                             f"got: {measure}")
-        
+            raise ValueError(
+                "Argument measure must satisfy: 0 <= measure < self.msr_cnt \n"
+                f"got: {measure}"
+            )
+
         beats_per_measure = self.audio.time_signature[0]
 
         if not 0 <= msr_offset < beats_per_measure:
-            raise ValueError("Argument msr_offset must satisfy: 0 <= msr_offset < self.time_signature[0] \n" \
-                             f"got: {msr_offset}")
+            raise ValueError(
+                "Argument msr_offset must satisfy: 0 <= msr_offset < self.time_signature[0] \n"
+                f"got: {msr_offset}"
+            )
 
         offset = self._seconds_per_bar / beats_per_measure * msr_offset
         return self._seconds_per_bar * measure + offset
-    
-    def _validate_measure_range(self, start_msr: int, msr_offset: float, end_msr: int) -> None:
+
+    def _validate_measure_range(
+        self, start_msr: int, msr_offset: float, end_msr: int
+    ) -> None:
         if not 0 <= start_msr < self.audio.msr_cnt:
-            raise ValueError("Argument start_msr must satisfy: 0 <= start_msr < self.msr_cnt\n" \
-                             f"got: {start_msr}")
-        
+            raise ValueError(
+                "Argument start_msr must satisfy: 0 <= start_msr < self.msr_cnt\n"
+                f"got: {start_msr}"
+            )
+
         beats_per_measure = self.audio.time_signature[0]
         if not 0 <= msr_offset < beats_per_measure:
-            raise ValueError("Argument msr_offset must satisfy: 0 <= msr_offset < self.time_signature[0]\n" \
-                             f"got: {msr_offset}")
-        
+            raise ValueError(
+                "Argument msr_offset must satisfy: 0 <= msr_offset < self.time_signature[0]\n"
+                f"got: {msr_offset}"
+            )
+
         if not 0 <= end_msr <= self.audio.msr_cnt:
-            raise ValueError("Argument end_msr must satisfy: 0 <= end_msr <= self.msr_cnt\n" \
-                             f"got: {end_msr}")
-        
+            raise ValueError(
+                "Argument end_msr must satisfy: 0 <= end_msr <= self.msr_cnt\n"
+                f"got: {end_msr}"
+            )
+
         if not start_msr < end_msr:
-            raise ValueError("Arguments start_msr and end_msr must satisfy: start_msr < end_msr\n" \
-                             f"got: start_msr={start_msr}, end_msr={end_msr}")
-        
+            raise ValueError(
+                "Arguments start_msr and end_msr must satisfy: start_msr < end_msr\n"
+                f"got: start_msr={start_msr}, end_msr={end_msr}"
+            )
+
     def _extract_f0(self, y, sr: int):
         f0, voiced_flag, voiced_prob = librosa.pyin(
-            y,
-            fmin=librosa.note_to_hz("G3"),
-            fmax=librosa.note_to_hz("E7"),
-            sr=sr
+            y, fmin=librosa.note_to_hz("G3"), fmax=librosa.note_to_hz("E7"), sr=sr
         )
 
         return f0, voiced_flag, voiced_prob
-    
+
     def _filter_voiced_frames(self, f0, voiced_flag, voiced_prob, times):
         mask = (voiced_flag == True) & (voiced_prob > 0.8)
         times_clean = times[mask]

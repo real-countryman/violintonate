@@ -36,7 +36,8 @@ class TestAudioMethods(unittest.TestCase):
         # Offset 2 beats adds 1 second.
         self.assertAlmostEqual(audio._bpm_to_secs(2, 2), 5.0)
 
-        #TODO get_pitches_and_times(...)
+        # TODO get_pitches_and_times(...)
+
 
 if __name__ == "__main__":
     unittest.main()

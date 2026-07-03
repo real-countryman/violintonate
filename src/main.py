@@ -3,6 +3,7 @@ from src.audio import *
 from src.pitch import *
 from src.xml_parsing import *
 
+
 def main():
     argc = len(sys.argv)
     argv = sys.argv
@@ -11,19 +12,22 @@ def main():
         print("Usage: python3 main.py <audio_file>")
         return
 
-    audio = Audio(argv[1], 76.0, (4,4), 96)
+    audio = Audio(argv[1], 76.0, (4, 4), 96)
 
-    pitches, times = Pitch_extractor(audio).extract_pitches_and_times(get_hz = False)
-    
+    pitches, times = Pitch_extractor(audio).extract_pitches_and_times(
+        end_msr=10, get_hz=False
+    )
+
     np.set_printoptions(threshold=np.inf)
-    print(pitches)
-    print(times)
+    for pitch, time in zip(pitches, times):
+        print((pitch, time))
 
     xml_file = Musicxml_parser("./input/xml_files/Quantum Occasu.xml", part_idx=0)
     score_events = xml_file.extract_score_events()
 
     for score_event in score_events:
         print(score_event)
+
 
 if __name__ == "__main__":
     main()

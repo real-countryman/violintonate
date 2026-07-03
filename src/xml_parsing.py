@@ -2,8 +2,9 @@ from music21 import converter, note, chord
 from dataclasses import dataclass
 from pathlib import Path
 
+
 @dataclass
-class Musicxml_parser():
+class Musicxml_parser:
     path: str
     part_idx: int = 0
 
@@ -17,7 +18,7 @@ class Musicxml_parser():
 
         if not score.parts:
             raise ValueError("No parts found in MusicXML file")
-        
+
         if self.part_idx >= len(score.parts):
             raise IndexError(
                 f"part_idx: {self.part_idx} out of range. "
@@ -27,7 +28,7 @@ class Musicxml_parser():
     def extract_score_events(self):
         self._validate()
         score = converter.parse(self.path, format="musicxml")
-        
+
         part = score.parts[self.part_idx]
         events = []
 
@@ -51,13 +52,15 @@ class Musicxml_parser():
             else:
                 continue
 
-            events.append({
-                "kind": kind,
-                "pitch_name": pitch_names,
-                "midi": midi,
-                "start_quarter_length": start_ql,
-                "duration_quarter_length": duration_ql,
-                "end_quarter_length": end_ql,
-            })
+            events.append(
+                {
+                    "kind": kind,
+                    "pitch_name": pitch_names,
+                    "midi": midi,
+                    "start_quarter_length": start_ql,
+                    "duration_quarter_length": duration_ql,
+                    "end_quarter_length": end_ql,
+                }
+            )
 
         return events
