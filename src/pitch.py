@@ -11,6 +11,12 @@ from src.audio import Audio
 class Pitch_extractor:
     audio: Audio
 
+    FRAME_LENGTH = 2048
+    HOP_LENGTH = 256
+    # May need tweaking
+    VOICED_PROB_THRESHOLD = 0.8
+    RMS_DB_THRESHOLD = -45.0
+
     def extract_pitches_and_times(
         self,
         start_msr: int = 0,
@@ -47,11 +53,18 @@ class Pitch_extractor:
         f0, voiced_flag, voiced_prob = self._extract_f0(y, sr)
 
         # Time axis for each pitch estimate
-        times = librosa.times_like(f0, sr=sr) + start
+        times = librosa.times_like(f0, sr=sr, hop_length=self.HOP_LENGTH) + start
+
+        # Compute rms
+        rms = librosa.feature.rms(
+            y=y, frame_length=self.FRAME_LENGTH, hop_length=self.HOP_LENGTH
+        )[0]
+
+        rms_db = librosa.amplitude_to_db(rms, ref=np.max)
 
         # Keep only voiced and confident frames
         pitches, pitch_times = self._filter_voiced_frames(
-            f0, voiced_flag, voiced_prob, times
+            f0, voiced_flag, voiced_prob, times, rms_db
         )
 
         if not get_hz:
@@ -133,13 +146,31 @@ class Pitch_extractor:
 
     def _extract_f0(self, y, sr: int):
         f0, voiced_flag, voiced_prob = librosa.pyin(
-            y, fmin=librosa.note_to_hz("G3"), fmax=librosa.note_to_hz("E7"), sr=sr
+            y,
+            fmin=librosa.note_to_hz("G3"),
+            fmax=librosa.note_to_hz("E7"),
+            sr=sr,
+            frame_length=self.FRAME_LENGTH,
+            hop_length=self.HOP_LENGTH,
         )
 
         return f0, voiced_flag, voiced_prob
 
-    def _filter_voiced_frames(self, f0, voiced_flag, voiced_prob, times):
-        mask = (voiced_flag == True) & (voiced_prob > 0.8)
+    def _filter_voiced_frames(
+        self,
+        f0: np.ndarray,
+        voiced_flag: np.ndarray,
+        voiced_prob: np.ndarray,
+        times: np.ndarray,
+        rms_db: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        mask = (
+            (voiced_flag == True)
+            & ~np.isnan(f0)
+            & (voiced_prob > self.VOICED_PROB_THRESHOLD)
+            & (rms_db > self.RMS_DB_THRESHOLD)
+        )
+
         times_clean = times[mask]
         f0_clean = f0[mask]
 
