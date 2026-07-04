@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 @dataclass
-class Musicxml_parser:
+class MusicxmlParser:
     path: str
     part_idx: int = 0
 

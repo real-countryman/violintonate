@@ -14,7 +14,7 @@ def main():
 
     audio = Audio(argv[1], 76.0, (4, 4), 96)
 
-    pitches, times = Pitch_extractor(audio).extract_pitches_and_times(
+    pitches, times = PitchExtractor(audio).extract_pitches_and_times(
         end_msr=10, get_hz=False
     )
 
@@ -22,7 +22,7 @@ def main():
     for pitch, time in zip(pitches, times):
         print((pitch, time))
 
-    xml_file = Musicxml_parser("./input/xml_files/Quantum Occasu.xml", part_idx=0)
+    xml_file = MusicxmlParser("./input/xml_files/Quantum Occasu.xml", part_idx=0)
     score_events = xml_file.extract_score_events()
 
     for score_event in score_events:

@@ -8,7 +8,7 @@ from src.audio import Audio
 
 
 @dataclass
-class Pitch_extractor:
+class PitchExtractor:
     audio: Audio
 
     FRAME_LENGTH = 2048
