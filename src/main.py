@@ -14,7 +14,9 @@ def main():
 
     audio = Audio(argv[1], 76.0, (4, 4), 96)
 
-    pitches, times = PitchExtractor(audio).extract_pitches_and_times(
+    time_mapper = ScoreTimeMapper(audio, 0, 0)
+
+    pitches, times = PitchExtractor(audio, time_mapper).extract_pitches_and_times(
         end_msr=10, get_hz=False
     )
 

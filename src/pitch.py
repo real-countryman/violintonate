@@ -8,6 +8,284 @@ from src.audio import Audio
 
 
 @dataclass
+class ScoreTimeMapper:
+    """
+    Converts score positions, expressed as measure numbers and quarter-length offsets,
+    into audio time in seconds.
+
+    The class uses BPM together with a beat unit to determine how score durations
+    map to real time.
+
+    If bpm_beat_ql is not provided, it is chosen automatically from the denominator
+    of the time signature. This means the default BPM beat follows the written beat
+    unit of the meter.
+
+    Examples:
+        4/4 with bpm_beat_ql=None:
+            BPM counts quarter notes.
+            bpm_beat_ql = 1.0
+
+        6/8 with bpm_beat_ql=None:
+            BPM counts eighth notes.
+            bpm_beat_ql = 0.5
+
+        6/8 with bpm_beat_ql=1.5:
+            BPM counts dotted quarter notes.
+            This represents two large dotted-quarter beats per bar.
+
+    Attributes:
+        bpm:
+            Tempo value in beats per minute.
+
+            The meaning of one BPM beat is defined by bpm_beat_ql.
+            For example, bpm=120 with bpm_beat_ql=1.0 means:
+            quarter note = 120 BPM.
+
+        time_signature:
+            Tuple in the form (numerator, denominator), for example (4, 4),
+            (3, 4), (6, 8), or (2, 2).
+
+            The denominator is also used to choose the default bpm_beat_ql
+            when bpm_beat_ql is not provided.
+
+        start_msr:
+            Zero-based start measure index.
+
+            For example, start_msr=0 means the first measure.
+
+        start_offset:
+            Offset inside the start measure, expressed in quarter lengths.
+
+            For example:
+                - 0.0 means the beginning of the measure
+                - 1.0 means one quarter note after the beginning
+                - 0.5 means one eighth note after the beginning
+
+        end_msr:
+            Zero-based end measure index.
+
+            For example, end_msr=4 means the fifth measure.
+
+        end_offset:
+            Offset inside the end measure, expressed in quarter lengths.
+
+        bpm_beat_ql:
+            Optional length of one BPM beat, expressed in quarter lengths.
+
+            If None, the value is calculated automatically as:
+
+                bpm_beat_ql = 4 / denominator
+
+            Examples:
+                - quarter note beat: bpm_beat_ql = 1.0
+                - eighth note beat: bpm_beat_ql = 0.5
+                - dotted quarter beat: bpm_beat_ql = 1.5
+                - half note beat: bpm_beat_ql = 2.0
+    """
+
+    bpm: float
+    time_signature: tuple[int, int]
+    start_msr: int
+    start_offset: float
+    end_msr: int
+    end_offset: float
+    bpm_beat_ql: float | None = None
+
+    def __post_init__(self):
+        """
+        Sets the default BPM beat unit if it was not provided, then validates
+        the initialized values.
+
+        If bpm_beat_ql is None, the default beat unit follows the denominator
+        of the time signature:
+
+            bpm_beat_ql = 4 / denominator
+
+        Examples:
+            4/4 -> bpm_beat_ql = 1.0
+            6/8 -> bpm_beat_ql = 0.5
+            2/2 -> bpm_beat_ql = 2.0
+        """
+        if self.bpm_beat_ql is None:
+            self.bpm_beat_ql = self._default_bpm_beat_ql()
+
+        self._validate()
+
+    def get_start_end_in_seconds(self) -> tuple[float, float]:
+        """
+        Calculates the configured start and end score positions in seconds.
+
+        Returns:
+            A tuple in the form:
+
+                (start_seconds, end_seconds)
+
+            start_seconds:
+                Absolute time from the beginning of the score to the start position.
+
+            end_seconds:
+                Absolute time from the beginning of the score to the end position.
+        """
+        start = self._calculate_start()
+        end = self._calculate_end()
+
+        return start, end
+
+    def _default_bpm_beat_ql(self) -> float:
+        """
+        Calculates the default BPM beat unit from the time-signature denominator.
+
+        The default behavior is:
+
+            bpm_beat_ql = 4 / denominator
+
+        This means the BPM beat follows the written denominator of the meter.
+
+        Examples:
+            4/4:
+                denominator = 4
+                bpm_beat_ql = 4 / 4 = 1.0
+                BPM counts quarter notes.
+
+            3/4:
+                denominator = 4
+                bpm_beat_ql = 4 / 4 = 1.0
+                BPM counts quarter notes.
+
+            6/8:
+                denominator = 8
+                bpm_beat_ql = 4 / 8 = 0.5
+                BPM counts eighth notes.
+
+            2/2:
+                denominator = 2
+                bpm_beat_ql = 4 / 2 = 2.0
+                BPM counts half notes.
+
+        Returns:
+            The default BPM beat unit, expressed in quarter lengths.
+        """
+        _, denominator = self.time_signature
+        return 4 / denominator
+
+    def _calculate_start(self):
+        """
+        Converts the configured start measure and start offset into seconds.
+
+        The calculation is:
+
+            start_seconds = start_msr * seconds_per_bar + start_offset_seconds
+
+        where start_offset is measured inside the start measure in quarter lengths.
+
+        Returns:
+            The absolute start time in seconds from the beginning of the score.
+        """
+        sec_per_bar = self._seconds_per_bar()
+        offset = self._quarter_length_to_seconds(self.start_offset)
+
+        start = self.start_msr * sec_per_bar + offset
+        return start
+
+    def _calculate_end(self):
+        """
+        Converts the configured end measure and end offset into seconds.
+
+        The calculation is:
+
+            end_seconds = end_msr * seconds_per_bar + end_offset_seconds
+
+        where end_offset is measured inside the end measure in quarter lengths.
+
+        Returns:
+            The absolute end time in seconds from the beginning of the score.
+        """
+        sec_per_bar = self._seconds_per_bar()
+        offset = self._quarter_length_to_seconds(self.end_offset)
+
+        end = self.end_msr * sec_per_bar + offset
+        return end
+
+    def _quarter_length_to_seconds(self, ql) -> float:
+        """
+        Converts a duration or offset in quarter lengths into seconds.
+
+        A quarter length is a score-duration unit where:
+            - quarter note = 1.0
+            - eighth note = 0.5
+            - dotted quarter note = 1.5
+            - half note = 2.0
+            - whole note = 4.0
+
+        The BPM value tells how many beats happen per minute.
+        The bpm_beat_ql value tells how long one of those BPM beats is.
+
+        Formula:
+            seconds = ql * 60 / bpm / bpm_beat_ql
+
+        Examples:
+            If bpm = 60 and bpm_beat_ql = 1.0:
+                quarter note = 60 BPM
+                1 quarter length = 1 second
+
+            If bpm = 120 and bpm_beat_ql = 0.5:
+                eighth note = 120 BPM
+                1 eighth note = 0.5 seconds
+                1 quarter length = 1 second
+
+            If bpm = 60 and bpm_beat_ql = 1.5:
+                dotted quarter note = 60 BPM
+                1 dotted quarter note = 1 second
+                1 quarter length = 0.666... seconds
+
+        Args:
+            ql:
+                Duration or offset expressed in quarter lengths.
+
+        Returns:
+            The equivalent duration in seconds.
+        """
+        return ql * 60 / self.bpm / self.bpm_beat_ql
+
+    def _seconds_per_bar(self) -> float:
+        """
+        Calculates the duration of one full measure in seconds.
+
+        First, the time signature is converted into the number of quarter lengths
+        in one bar:
+
+            bar_ql = numerator * (4 / denominator)
+
+        Then that quarter-length duration is converted into seconds using the BPM
+        and bpm_beat_ql.
+
+        Examples:
+            4/4:
+                bar_ql = 4 * (4 / 4) = 4.0 quarter lengths
+
+            3/4:
+                bar_ql = 3 * (4 / 4) = 3.0 quarter lengths
+
+            6/8:
+                bar_ql = 6 * (4 / 8) = 3.0 quarter lengths
+
+            2/2:
+                bar_ql = 2 * (4 / 2) = 4.0 quarter lengths
+
+        Returns:
+            The duration of one full measure in seconds.
+        """
+        numerator, denominator = self.time_signature
+        bar_ql = numerator * (4 / denominator)
+
+        return self._quarter_length_to_seconds(bar_ql)
+
+    # TODO
+    def _validate(self):
+        return
+
+
+@dataclass
 class PitchExtractor:
     audio: Audio
 
@@ -75,46 +353,6 @@ class PitchExtractor:
             return notes, pitch_times
         else:
             return pitches, pitch_times
-
-    @property
-    def _seconds_per_bar(self) -> float:
-        """
-        Calculates how much time in seconds takes one bar in sheet music
-
-        Returns:
-            How many seconds per bar
-        """
-        beats_per_bar = self.audio.time_signature[0]
-        return beats_per_bar * 60 / self.audio.bpm
-
-    def _bpm_to_secs(self, measure: int, msr_offset: int) -> float:
-        """
-        Converts concrete beat in score to seconds from start
-
-        Args:
-            audio: The audio dataclass to calculate
-            measure: The measure number index (start at 0)
-            msr_offset: The offset inside the measure (start at 0)
-
-        Returns:
-            The time in seconds
-        """
-        if not 0 <= measure < self.audio.msr_cnt:
-            raise ValueError(
-                "Argument measure must satisfy: 0 <= measure < self.msr_cnt \n"
-                f"got: {measure}"
-            )
-
-        beats_per_measure = self.audio.time_signature[0]
-
-        if not 0 <= msr_offset < beats_per_measure:
-            raise ValueError(
-                "Argument msr_offset must satisfy: 0 <= msr_offset < self.time_signature[0] \n"
-                f"got: {msr_offset}"
-            )
-
-        offset = self._seconds_per_bar / beats_per_measure * msr_offset
-        return self._seconds_per_bar * measure + offset
 
     def _validate_measure_range(
         self, start_msr: int, msr_offset: float, end_msr: int
