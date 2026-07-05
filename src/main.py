@@ -19,14 +19,15 @@ def main():
     )
 
     np.set_printoptions(threshold=np.inf)
-    for pitch, time in zip(pitches, times):
-        print((pitch, time))
 
     xml_file = MusicxmlParser("./input/xml_files/Quantum Occasu.xml", part_idx=0)
     score_events = xml_file.extract_score_events()
 
-    for score_event in score_events:
-        print(score_event)
+    # analyzer = IntotationAnalyzer(pitches, times, score_events)
+    # results = analyzer.get_intonation_bool()
+
+    for event in score_events:
+        print(event)
 
 
 if __name__ == "__main__":
