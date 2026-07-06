@@ -517,33 +517,28 @@ class PitchExtractor:
 # TODO class not functional, ScoreTimeMapper class needed!
 @dataclass
 class IntotationAnalyzer:
+    # TODO intonation_tolerance_th (in cents)
     pitches: np.ndarray
     pitch_times: np.ndarray
     score_events: list[dict]
 
-    def get_intonation_bool(self):
-        results = []
+    # 1 semitone = 100 cents, may need tweaking
+    INTONATION_TOLERANCE_CENTS = 10
 
-        for event in self.score_events:
-            if event["kind"] != "note":
-                continue
+    # TODO
+    def get_intonation_bool(self) -> list[tuple[float, float, bool]]:
+        result = []
 
-            note_name = event["pitch_name"][0]
-            start = event["start_quarter_length"]
-            end = event["end_quarter_length"]
+        for pitch, pitch_time in self.pitches, self.pitch_times:
+            ok = self._compare_pitch_with_score_event(pitch, pitch_time)
+            result.append((pitch, pitch_time, ok))
 
-            mask = (self.pitch_times >= start) & (self.pitch_times < end)
-            event_pitches = self.pitches[mask]
-            event_times = self.pitch_times[mask]
+        return result
 
-            if len(event_pitches) == 0:
-                continue
-
-            ok = True
-
-            results.append((note_name, event_times, ok))
-
-        return results
-
+    # TODO
     def get_bad_frames(self):
+        return
+
+    # TODO
+    def _compare_pitch_with_score_event(self, pitch, pitch_time) -> bool:
         return

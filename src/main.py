@@ -25,7 +25,7 @@ def main():
 
     start_sec, end_sec = time_mapper.get_start_end_in_seconds()
 
-    pitches, times = PitchExtractor(
+    pitches, pitch_times = PitchExtractor(
         audio, start_sec, end_sec
     ).extract_pitches_and_times()
 
@@ -37,11 +37,18 @@ def main():
     # analyzer = IntotationAnalyzer(pitches, times, score_events)
     # results = analyzer.get_intonation_bool()
 
-    for pitch, time in zip(pitches, times):
+    for pitch, time in zip(pitches, pitch_times):
         print(f"pitch: {pitch}, time: {time}")
 
     for event in score_events:
         print(event)
+
+    # TODO
+    intonation_analyzer = IntotationAnalyzer(pitches, pitch_times, score_events)
+    intonation_ok = intonation_analyzer.get_intonation_bool()
+
+    for item in intonation_ok:
+        print(item)
 
 
 if __name__ == "__main__":
