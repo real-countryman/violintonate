@@ -287,7 +287,45 @@ class ScoreTimeMapper:
 
 @dataclass
 class PitchExtractor:
+    """
+    Extracts pitch estimates and their corresponding timestamps from an audio file.
+
+    The extractor can optionally process only a selected time range of the audio,
+    defined by start_sec and end_sec. It uses librosa.pyin to estimate the
+    fundamental frequency and filters out frames that are likely to be silence,
+    unvoiced, or unreliable.
+
+    Attributes:
+        audio:
+            Audio object containing at least the path to the audio file.
+
+        start_sec:
+            Start time in seconds from which pitch extraction should begin.
+            If None, extraction starts at the beginning of the audio.
+
+        end_sec:
+            End time in seconds where pitch extraction should stop.
+            If None, extraction should continue until the end of the selected audio.
+            Currently, this value is converted to a duration internally.
+
+    Class Attributes:
+        FRAME_LENGTH:
+            Number of samples used in each analysis frame.
+
+        HOP_LENGTH:
+            Number of samples between consecutive analysis frames.
+
+        VOICED_PROB_THRESHOLD:
+            Minimum voiced probability required for a frame to be kept.
+
+        RMS_DB_THRESHOLD:
+            Minimum RMS level in decibels required for a frame to be kept.
+            Frames below this threshold are treated as too quiet.
+    """
+
     audio: Audio
+    start_sec: float | None = None
+    end_sec: float | None = None
 
     FRAME_LENGTH = 2048
     HOP_LENGTH = 256
@@ -297,41 +335,65 @@ class PitchExtractor:
 
     def extract_pitches_and_times(
         self,
-        start_msr: int = 0,
-        msr_offset: float = 0,
-        end_msr: int | None = None,
         get_hz=True,
     ) -> tuple[np.ndarray, np.ndarray]:
         """
-        Converts audio format into pitches and times and removes unvoiced / low confidence frames.
+        Extracts pitches and their timestamps from the audio file.
+
+        The audio is loaded from start_sec to end_sec, converted to mono,
+        and analyzed using librosa.pyin. The extracted pitch frames are then
+        filtered using three criteria:
+
+            - the frame must be marked as voiced
+            - the voiced probability must be above VOICED_PROB_THRESHOLD
+            - the RMS level must be above RMS_DB_THRESHOLD
 
         Args:
-            start_msr: The start measure number index (start at 0)
-            msr_offset: The shift in beats in measures (start at 0)
-            end_msr: The end measure number index
-            get_hz: If true, returns hz values instead of notes (391.9 instead of G4)
-                Defaults to False.
+            get_hz:
+                If True, returns pitch values in Hertz.
+                If False, converts the detected pitches to note names,
+                for example "G4" instead of 391.9 Hz.
+
+        Returns:
+            A tuple containing:
+
+                pitches:
+                    A NumPy array of pitch values. These are either Hertz values
+                    or note names, depending on get_hz.
+
+                pitch_times:
+                    A NumPy array of timestamps in seconds. Each timestamp
+                    corresponds to one pitch value.
+
+        Raises:
+            ValueError:
+                Should be raised by _validate_measure_range if the selected
+                time range is invalid.
         """
-        if end_msr is None:
-            end_msr = self.audio.msr_cnt - 1
+        if self.start_sec is None:
+            self.start_sec = 0
 
-        self._validate_measure_range(start_msr, msr_offset, end_msr)
+        dur = None
+        if self.end_sec is None:
+            dur = self.end_sec - self.start_sec
 
-        start = self._bpm_to_secs(start_msr, msr_offset)
-        end = self._bpm_to_secs(end_msr, msr_offset=0)
-        dur = end - start
+        self._validate_measure_range()
+
+        dur = self.end_sec - self.start_sec
 
         # Load audio
         # audio signal, sample rate
         y, sr = librosa.load(
-            self.audio.path, sr=None, offset=start, duration=dur, mono=True
+            self.audio.path, sr=None, offset=self.start_sec, duration=dur, mono=True
         )
 
         # Estimate pitch / fundamental frequency
         f0, voiced_flag, voiced_prob = self._extract_f0(y, sr)
 
         # Time axis for each pitch estimate
-        times = librosa.times_like(f0, sr=sr, hop_length=self.HOP_LENGTH) + start
+        times = (
+            librosa.times_like(f0, sr=sr, hop_length=self.HOP_LENGTH) + self.start_sec
+        )
 
         # Compute rms
         rms = librosa.feature.rms(
@@ -354,35 +416,37 @@ class PitchExtractor:
         else:
             return pitches, pitch_times
 
-    def _validate_measure_range(
-        self, start_msr: int, msr_offset: float, end_msr: int
-    ) -> None:
-        if not 0 <= start_msr < self.audio.msr_cnt:
-            raise ValueError(
-                "Argument start_msr must satisfy: 0 <= start_msr < self.msr_cnt\n"
-                f"got: {start_msr}"
-            )
-
-        beats_per_measure = self.audio.time_signature[0]
-        if not 0 <= msr_offset < beats_per_measure:
-            raise ValueError(
-                "Argument msr_offset must satisfy: 0 <= msr_offset < self.time_signature[0]\n"
-                f"got: {msr_offset}"
-            )
-
-        if not 0 <= end_msr <= self.audio.msr_cnt:
-            raise ValueError(
-                "Argument end_msr must satisfy: 0 <= end_msr <= self.msr_cnt\n"
-                f"got: {end_msr}"
-            )
-
-        if not start_msr < end_msr:
-            raise ValueError(
-                "Arguments start_msr and end_msr must satisfy: start_msr < end_msr\n"
-                f"got: start_msr={start_msr}, end_msr={end_msr}"
-            )
+    # TODO
+    def _validate_measure_range(self):
+        return
 
     def _extract_f0(self, y, sr: int):
+        """
+        Estimates the fundamental frequency of the audio signal.
+
+        Uses librosa.pyin to estimate pitch frame by frame. The pitch range is
+        limited to the approximate range of the violin, from G3 to E7.
+
+        Args:
+            y:
+                Audio signal as a NumPy array.
+
+            sr:
+                Sample rate of the audio signal.
+
+        Returns:
+            A tuple containing:
+
+                f0:
+                    Estimated fundamental frequency for each frame in Hertz.
+                    Unvoiced frames may contain NaN values.
+
+                voiced_flag:
+                    Boolean array indicating whether each frame is considered voiced.
+
+                voiced_prob:
+                    Probability array indicating the confidence that each frame is voiced.
+        """
         f0, voiced_flag, voiced_prob = librosa.pyin(
             y,
             fmin=librosa.note_to_hz("G3"),
@@ -402,6 +466,38 @@ class PitchExtractor:
         times: np.ndarray,
         rms_db: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Removes unreliable pitch frames.
+
+        A frame is kept only if it is voiced, has a valid f0 value, has a voiced
+        probability above VOICED_PROB_THRESHOLD, and is loud enough according to
+        RMS_DB_THRESHOLD.
+
+        Args:
+            f0:
+                Estimated fundamental frequency values in Hertz.
+
+            voiced_flag:
+                Boolean array indicating whether each frame is considered voiced.
+
+            voiced_prob:
+                Probability that each frame is voiced.
+
+            times:
+                Timestamp of each frame in seconds.
+
+            rms_db:
+                RMS energy of each frame converted to decibels.
+
+        Returns:
+            A tuple containing:
+
+                pitches:
+                    Filtered pitch values in Hertz.
+
+                pitch_times:
+                    Timestamps corresponding to the filtered pitch values.
+        """
         mask = (
             (voiced_flag == True)
             & ~np.isnan(f0)
