@@ -8,11 +8,16 @@ def main():
     argc = len(sys.argv)
     argv = sys.argv
 
+    np.set_printoptions(threshold=np.inf)
+
     if argc != 2:
         print("Usage: python3 main.py <audio_file>")
         return
 
     audio = Audio(argv[1], 76.0, (4, 4), 96)
+
+    xml_file = MusicxmlParser("./input/xml_files/Quantum Occasu.xml", part_idx=0)
+    score_events = xml_file.extract_score_events()
 
     time_mapper = ScoreTimeMapper(
         audio.bpm,
@@ -23,32 +28,17 @@ def main():
         end_offset=0,
     )
 
+    for event in score_events:
+        print(event)
+
     start_sec, end_sec = time_mapper.get_start_end_in_seconds()
 
     pitches, pitch_times = PitchExtractor(
         audio, start_sec, end_sec
-    ).extract_pitches_and_times()
-
-    np.set_printoptions(threshold=np.inf)
-
-    xml_file = MusicxmlParser("./input/xml_files/Quantum Occasu.xml", part_idx=0)
-    score_events = xml_file.extract_score_events()
-
-    # analyzer = IntotationAnalyzer(pitches, times, score_events)
-    # results = analyzer.get_intonation_bool()
+    ).extract_pitches_and_times(get_hz=True)
 
     for pitch, time in zip(pitches, pitch_times):
         print(f"pitch: {pitch}, time: {time}")
-
-    for event in score_events:
-        print(event)
-
-    # TODO
-    intonation_analyzer = IntotationAnalyzer(pitches, pitch_times, score_events)
-    intonation_ok = intonation_analyzer.get_intonation_bool()
-
-    for item in intonation_ok:
-        print(item)
 
 
 if __name__ == "__main__":

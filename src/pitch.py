@@ -3,6 +3,7 @@ from pathlib import Path
 
 import librosa
 import numpy as np
+from bisect import bisect_left
 
 from src.audio import Audio
 
@@ -111,26 +112,6 @@ class ScoreTimeMapper:
 
         self._validate()
 
-    def get_start_end_in_seconds(self) -> tuple[float, float]:
-        """
-        Calculates the configured start and end score positions in seconds.
-
-        Returns:
-            A tuple in the form:
-
-                (start_seconds, end_seconds)
-
-            start_seconds:
-                Absolute time from the beginning of the score to the start position.
-
-            end_seconds:
-                Absolute time from the beginning of the score to the end position.
-        """
-        start = self._calculate_start()
-        end = self._calculate_end()
-
-        return start, end
-
     def _default_bpm_beat_ql(self) -> float:
         """
         Calculates the default BPM beat unit from the time-signature denominator.
@@ -168,43 +149,53 @@ class ScoreTimeMapper:
         _, denominator = self.time_signature
         return 4 / denominator
 
-    def _calculate_start(self):
+    def get_start_end_in_seconds(self) -> tuple[float, float]:
         """
-        Converts the configured start measure and start offset into seconds.
-
-        The calculation is:
-
-            start_seconds = start_msr * seconds_per_bar + start_offset_seconds
-
-        where start_offset is measured inside the start measure in quarter lengths.
+        Calculates the configured start and end score positions in seconds.
 
         Returns:
-            The absolute start time in seconds from the beginning of the score.
+            A tuple in the form:
+
+                (start_seconds, end_seconds)
+
+            start_seconds:
+                Absolute time from the beginning of the score to the start position.
+
+            end_seconds:
+                Absolute time from the beginning of the score to the end position.
         """
-        sec_per_bar = self._seconds_per_bar()
-        offset = self._quarter_length_to_seconds(self.start_offset)
+        start_ql, end_ql = self.get_start_end_in_quarter_lengths()
 
-        start = self.start_msr * sec_per_bar + offset
-        return start
+        start_sec = self._quarter_length_to_seconds(start_ql)
+        end_sec = self._quarter_length_to_seconds(end_ql)
 
-    def _calculate_end(self):
-        """
-        Converts the configured end measure and end offset into seconds.
+        return start_sec, end_sec
 
-        The calculation is:
+    def get_start_end_in_quarter_lengths(self) -> tuple[float, float]:
+        start = self._measure_offset_to_quarter_length(
+            self.start_msr,
+            self.start_offset,
+        )
+        end = self._measure_offset_to_quarter_length(
+            self.end_msr,
+            self.end_offset,
+        )
 
-            end_seconds = end_msr * seconds_per_bar + end_offset_seconds
+        return start, end
 
-        where end_offset is measured inside the end measure in quarter lengths.
+    def crop_score_events(self, score_events: list[dict]) -> list[dict]:
+        start_ql, end_ql = self.get_start_end_in_quarter_lengths()
 
-        Returns:
-            The absolute end time in seconds from the beginning of the score.
-        """
-        sec_per_bar = self._seconds_per_bar()
-        offset = self._quarter_length_to_seconds(self.end_offset)
+        start_times = [event["start_quarter_length"] for event in score_events]
 
-        end = self.end_msr * sec_per_bar + offset
-        return end
+        start_idx = bisect_left(start_times, start_ql)
+        end_idx = bisect_left(start_times, end_ql)
+
+        return score_events[start_idx:end_idx]
+
+    # TODO
+    def score_events_add_times(self, score_events: list) -> list[dict]:
+        return
 
     def _quarter_length_to_seconds(self, ql) -> float:
         """
@@ -245,40 +236,15 @@ class ScoreTimeMapper:
         Returns:
             The equivalent duration in seconds.
         """
-        return ql * 60 / self.bpm / self.bpm_beat_ql
+        seconds_per_beat = 60 / self.bpm
+        return ql * seconds_per_beat / self.bpm_beat_ql
 
-    def _seconds_per_bar(self) -> float:
-        """
-        Calculates the duration of one full measure in seconds.
+    def _measure_offset_to_quarter_length(self, measure: int, offset: float) -> float:
+        return measure * self._quarter_lengths_per_bar() + offset
 
-        First, the time signature is converted into the number of quarter lengths
-        in one bar:
-
-            bar_ql = numerator * (4 / denominator)
-
-        Then that quarter-length duration is converted into seconds using the BPM
-        and bpm_beat_ql.
-
-        Examples:
-            4/4:
-                bar_ql = 4 * (4 / 4) = 4.0 quarter lengths
-
-            3/4:
-                bar_ql = 3 * (4 / 4) = 3.0 quarter lengths
-
-            6/8:
-                bar_ql = 6 * (4 / 8) = 3.0 quarter lengths
-
-            2/2:
-                bar_ql = 2 * (4 / 2) = 4.0 quarter lengths
-
-        Returns:
-            The duration of one full measure in seconds.
-        """
+    def _quarter_lengths_per_bar(self) -> float:
         numerator, denominator = self.time_signature
-        bar_ql = numerator * (4 / denominator)
-
-        return self._quarter_length_to_seconds(bar_ql)
+        return numerator * (4 / denominator)
 
     # TODO
     def _validate(self):
