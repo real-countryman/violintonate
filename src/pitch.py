@@ -193,9 +193,27 @@ class ScoreTimeMapper:
 
         return score_events[start_idx:end_idx]
 
-    # TODO
-    def score_events_add_times(self, score_events: list) -> list[dict]:
-        return
+    def score_events_add_times(self, score_events: list[dict]) -> list[dict]:
+        """
+        Adds start_sec and end_sec to each score event in place.
+
+        Args:
+            score_events:
+                List of score event dictionaries. Each event must contain
+                "start_quarter_length" and "end_quarter_length".
+
+        Returns:
+            The same mutated list, with each event modified in place.
+        """
+        for event in score_events:
+            event["start_sec"] = self._quarter_length_to_seconds(
+                event["start_quarter_length"]
+            )
+            event["end_sec"] = self._quarter_length_to_seconds(
+                event["end_quarter_length"]
+            )
+
+        return score_events
 
     def _quarter_length_to_seconds(self, ql) -> float:
         """

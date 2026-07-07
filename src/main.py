@@ -28,6 +28,9 @@ def main():
         end_offset=0,
     )
 
+    score_events = time_mapper.crop_score_events(score_events)
+    score_events = time_mapper.score_events_add_times(score_events)
+
     for event in score_events:
         print(event)
 
