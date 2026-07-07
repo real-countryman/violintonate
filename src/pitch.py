@@ -500,7 +500,6 @@ class PitchExtractor:
         return pitches, pitch_times
 
 
-# TODO class not functional, ScoreTimeMapper class needed!
 @dataclass
 class IntotationAnalyzer:
     # TODO intonation_tolerance_th (in cents)
@@ -511,20 +510,43 @@ class IntotationAnalyzer:
     # 1 semitone = 100 cents, may need tweaking
     INTONATION_TOLERANCE_CENTS = 10
 
-    # TODO
     def get_intonation_bool(self) -> list[tuple[float, float, bool]]:
         result = []
 
-        for pitch, pitch_time in self.pitches, self.pitch_times:
+        for pitch, pitch_time in zip(self.pitches, self.pitch_times):
             ok = self._compare_pitch_with_score_event(pitch, pitch_time)
             result.append((pitch, pitch_time, ok))
 
         return result
 
-    # TODO
-    def get_bad_frames(self):
-        return
+    def get_bad_frames(self) -> list[tuple[float, float]]:
+        analyzed_frames = self.get_intonation_bool()
 
-    # TODO
-    def _compare_pitch_with_score_event(self, pitch, pitch_time) -> bool:
-        return
+        return [
+            (pitch_time, pitch) for pitch_time, pitch, ok in analyzed_frames if not ok
+        ]
+
+    def _compare_pitch_with_score_event(self, pitch: float, pitch_time: float) -> bool:
+        score_event = self._find_score_event_at_time(pitch_time)
+
+        if score_event is None:
+            return False
+
+        if score_event["kind"] != "note":
+            return False
+
+        expected_midi = score_event["midi"]
+
+        cents_error = abs((pitch - expected_midi) * 100)
+
+        return cents_error <= self.INTONATION_TOLERANCE_CENTS
+
+    def _find_score_event_at_time(self, pitch_time: float) -> dict | None:
+        for event in self.score_events:
+            if event["kind"] != "note":
+                continue
+
+            if event["start_sec"] <= pitch_time < event["end_sec"]:
+                return event
+
+        return None

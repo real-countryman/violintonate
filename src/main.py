@@ -31,17 +31,21 @@ def main():
     score_events = time_mapper.crop_score_events(score_events)
     score_events = time_mapper.score_events_add_times(score_events)
 
-    for event in score_events:
-        print(event)
-
     start_sec, end_sec = time_mapper.get_start_end_in_seconds()
 
     pitches, pitch_times = PitchExtractor(
         audio, start_sec, end_sec
     ).extract_pitches_and_times(get_midi=True)
 
-    for pitch, time in zip(pitches, pitch_times):
-        print(f"pitch: {pitch}, time: {time}")
+    analyzer = IntotationAnalyzer(pitches, pitch_times, score_events)
+    events_ok = analyzer.get_intonation_bool()
+    bad_frames = analyzer.get_bad_frames()
+
+    for event in events_ok:
+        print(f"all: {event}")
+
+    for frame in bad_frames:
+        print(f"bad: {frame}")
 
 
 if __name__ == "__main__":
