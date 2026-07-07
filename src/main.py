@@ -38,7 +38,7 @@ def main():
 
     pitches, pitch_times = PitchExtractor(
         audio, start_sec, end_sec
-    ).extract_pitches_and_times(get_hz=True)
+    ).extract_pitches_and_times(get_midi=True)
 
     for pitch, time in zip(pitches, pitch_times):
         print(f"pitch: {pitch}, time: {time}")

@@ -269,6 +269,7 @@ class ScoreTimeMapper:
         return
 
 
+# TODO look into resolution parameter in librosa.pyin() function
 @dataclass
 class PitchExtractor:
     """
@@ -319,7 +320,7 @@ class PitchExtractor:
 
     def extract_pitches_and_times(
         self,
-        get_hz=True,
+        get_midi=True,
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Extracts pitches and their timestamps from the audio file.
@@ -333,17 +334,17 @@ class PitchExtractor:
             - the RMS level must be above RMS_DB_THRESHOLD
 
         Args:
-            get_hz:
-                If True, returns pitch values in Hertz.
+            get_midi:
+                If True, returns pitch values in fracional MIDI.
                 If False, converts the detected pitches to note names,
-                for example "G4" instead of 391.9 Hz.
+                for example "A4" instead of 69.0 Hz.
 
         Returns:
             A tuple containing:
 
                 pitches:
-                    A NumPy array of pitch values. These are either Hertz values
-                    or note names, depending on get_hz.
+                    A NumPy array of pitch values. These are either MIDI values
+                    or note names, depending on get_midi.
 
                 pitch_times:
                     A NumPy array of timestamps in seconds. Each timestamp
@@ -391,14 +392,15 @@ class PitchExtractor:
             f0, voiced_flag, voiced_prob, times, rms_db
         )
 
-        if not get_hz:
+        if not get_midi:
             notes = librosa.midi_to_note(
                 np.round(librosa.hz_to_midi(pitches)).astype(int)
             )
 
             return notes, pitch_times
         else:
-            return pitches, pitch_times
+            midis = librosa.hz_to_midi(pitches)
+            return midis, pitch_times
 
     # TODO
     def _validate_measure_range(self):
