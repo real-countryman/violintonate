@@ -314,14 +314,11 @@ class PitchExtractor:
 
     FRAME_LENGTH = 2048
     HOP_LENGTH = 256
-    # May need tweaking
-    VOICED_PROB_THRESHOLD = 0.8
-    RMS_DB_THRESHOLD = -45.0
 
     def extract_pitches_and_times(
         self,
         get_midi=True,
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray], np.ndarray, np.ndarray]:
         """
         Extracts pitches and their timestamps from the audio file.
 
@@ -387,20 +384,7 @@ class PitchExtractor:
 
         rms_db = librosa.amplitude_to_db(rms, ref=np.max)
 
-        # Keep only voiced and confident frames
-        pitches, pitch_times = self._filter_voiced_frames(
-            f0, voiced_flag, voiced_prob, times, rms_db
-        )
-
-        if not get_midi:
-            notes = librosa.midi_to_note(
-                np.round(librosa.hz_to_midi(pitches)).astype(int)
-            )
-
-            return notes, pitch_times
-        else:
-            midis = librosa.hz_to_midi(pitches)
-            return midis, pitch_times
+        return (f0, voiced_flag, voiced_prob), rms_db, times
 
     # TODO
     def _validate_measure_range(self):
@@ -443,61 +427,6 @@ class PitchExtractor:
         )
 
         return f0, voiced_flag, voiced_prob
-
-    def _filter_voiced_frames(
-        self,
-        f0: np.ndarray,
-        voiced_flag: np.ndarray,
-        voiced_prob: np.ndarray,
-        times: np.ndarray,
-        rms_db: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray]:
-        """
-        Removes unreliable pitch frames.
-
-        A frame is kept only if it is voiced, has a valid f0 value, has a voiced
-        probability above VOICED_PROB_THRESHOLD, and is loud enough according to
-        RMS_DB_THRESHOLD.
-
-        Args:
-            f0:
-                Estimated fundamental frequency values in Hertz.
-
-            voiced_flag:
-                Boolean array indicating whether each frame is considered voiced.
-
-            voiced_prob:
-                Probability that each frame is voiced.
-
-            times:
-                Timestamp of each frame in seconds.
-
-            rms_db:
-                RMS energy of each frame converted to decibels.
-
-        Returns:
-            A tuple containing:
-
-                pitches:
-                    Filtered pitch values in Hertz.
-
-                pitch_times:
-                    Timestamps corresponding to the filtered pitch values.
-        """
-        mask = (
-            (voiced_flag == True)
-            & ~np.isnan(f0)
-            & (voiced_prob > self.VOICED_PROB_THRESHOLD)
-            & (rms_db > self.RMS_DB_THRESHOLD)
-        )
-
-        times_clean = times[mask]
-        f0_clean = f0[mask]
-
-        pitches = f0_clean
-        pitch_times = times_clean
-
-        return pitches, pitch_times
 
 
 @dataclass

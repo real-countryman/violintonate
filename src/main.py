@@ -33,10 +33,20 @@ def main():
 
     start_sec, end_sec = time_mapper.get_start_end_in_seconds()
 
-    pitches, pitch_times = PitchExtractor(
+    (f0, voiced_flag, voiced_prob), rms_db, times = PitchExtractor(
         audio, start_sec, end_sec
-    ).extract_pitches_and_times(get_midi=True)
+    ).extract_pitches_and_times()
 
+    for f0_value, voiced_flag_value, voiced_prob_value, rms_db_value, time in zip(
+        f0, voiced_flag, voiced_prob, rms_db, times
+    ):
+        print(
+            f"audio_properties: {(f0_value, voiced_flag_value, voiced_prob_value)} | "
+            f"rms_db: {rms_db_value} | "
+            f"time: {time}"
+        )
+
+    """
     analyzer = IntotationAnalyzer(pitches, pitch_times, score_events)
     events_ok = analyzer.get_intonation_bool()
     bad_frames = analyzer.get_bad_frames()
@@ -46,6 +56,7 @@ def main():
 
     for frame in bad_frames:
         print(f"bad: {frame}")
+    """
 
 
 if __name__ == "__main__":
