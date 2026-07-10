@@ -7,6 +7,9 @@ from bisect import bisect_left
 
 from src.audio import Audio
 
+FRAME_LENGTH = 2048
+HOP_LENGTH = 256
+
 
 @dataclass
 class ScoreTimeMapper:
@@ -312,9 +315,6 @@ class PitchExtractor:
     start_sec: float | None = None
     end_sec: float | None = None
 
-    FRAME_LENGTH = 2048
-    HOP_LENGTH = 256
-
     def extract_pitches_and_times(
         self,
         get_midi=True,
@@ -373,18 +373,14 @@ class PitchExtractor:
         f0, voiced_flag, voiced_prob = self._extract_f0(y, sr)
 
         # Time axis for each pitch estimate
-        times = (
-            librosa.times_like(f0, sr=sr, hop_length=self.HOP_LENGTH) + self.start_sec
-        )
+        times = librosa.times_like(f0, sr=sr, hop_length=HOP_LENGTH) + self.start_sec
 
         # Compute rms
         rms = librosa.feature.rms(
-            y=y, frame_length=self.FRAME_LENGTH, hop_length=self.HOP_LENGTH
+            y=y, frame_length=FRAME_LENGTH, hop_length=HOP_LENGTH
         )[0]
 
-        rms_db = librosa.amplitude_to_db(rms, ref=np.max)
-
-        return (f0, voiced_flag, voiced_prob), rms_db, times
+        return (f0, voiced_flag, voiced_prob), rms, times
 
     # TODO
     def _validate_measure_range(self):
@@ -422,8 +418,8 @@ class PitchExtractor:
             fmin=librosa.note_to_hz("G3"),
             fmax=librosa.note_to_hz("E7"),
             sr=sr,
-            frame_length=self.FRAME_LENGTH,
-            hop_length=self.HOP_LENGTH,
+            frame_length=FRAME_LENGTH,
+            hop_length=HOP_LENGTH,
         )
 
         return f0, voiced_flag, voiced_prob
@@ -479,3 +475,91 @@ class IntotationAnalyzer:
                 return event
 
         return None
+
+
+@dataclass
+class PitchFilter:
+    pitches: np.ndarray
+    voiced_flags: np.ndarray
+    voiced_probs: np.ndarray
+    times: np.ndarray
+    rms: np.ndarray
+    msr_time_secs: float
+
+    # May need tweaking
+    VOICED_PROB_THRESHOLD = 0.8
+    RMS_DB_THRESHOLD = -1
+
+    def __post_init__(self):
+        self._set_rms_db_threshold()
+
+    def filter_frames(
+        self,
+        f0,
+        voiced_flag,
+        voiced_prob,
+        rms_db,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Removes unreliable pitch frames.
+
+        A frame is kept only if it is voiced, has a valid f0 value, has a voiced
+        probability above VOICED_PROB_THRESHOLD, and is loud enough according to
+        RMS_DB_THRESHOLD.
+
+        Args:
+            f0:
+                Estimated fundamental frequency values in Hertz.
+
+            voiced_flag:
+                Boolean array indicating whether each frame is considered voiced.
+
+            voiced_prob:
+                Probability that each frame is voiced.
+
+            times:
+                Timestamp of each frame in seconds.
+
+            rms_db:
+                RMS energy of each frame converted to decibels.
+
+        Returns:
+            A tuple containing:
+
+                pitches:
+                    Filtered pitch values in Hertz.
+
+                pitch_times:
+                    Timestamps corresponding to the filtered pitch values.
+        """
+        mask = (
+            (voiced_flag == True)
+            & ~np.isnan(f0)
+            & (voiced_prob > self.VOICED_PROB_THRESHOLD)
+            & (rms_db > self.RMS_DB_THRESHOLD)
+        )
+
+        times_clean = self.times[mask]
+        f0_clean = f0[mask]
+
+        pitches = f0_clean
+        pitch_times = times_clean
+
+        return pitches, pitch_times
+
+    def _set_rms_db_threshold(self):
+        """
+        Sets RMS_DB_THRESHOLD based on the average RMS dB value
+        during the first measure, which is assumed to be quiet/count-in.
+        """
+
+        first_measure_end_idx = np.searchsorted(self.times, self.msr_time_secs)
+
+        quiet_rms = self.rms[:first_measure_end_idx]
+
+        if quiet_rms.size == 0:
+            raise ValueError("No RMS frames found in the first measure.")
+
+        quiet_avg_db = np.average(quiet_rms)
+
+        self.RMS_DB_THRESHOLD = 2 * quiet_avg_db
