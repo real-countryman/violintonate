@@ -31,12 +31,16 @@ def main():
     score_events = time_mapper.crop_score_events(score_events)
     score_events = time_mapper.score_events_add_times(score_events)
 
+    for event in score_events:
+        print(event)
+
     start_sec, end_sec = time_mapper.get_start_end_in_seconds()
 
     (f0, voiced_flags, voiced_probs), rms, times = PitchExtractor(
         audio, start_sec, end_sec
     ).extract_pitches_and_times()
 
+    """
     for f0_value, voiced_flag_value, voiced_prob_value, rms_value, time in zip(
         f0, voiced_flags, voiced_probs, rms, times
     ):
@@ -45,7 +49,7 @@ def main():
             f"rms: {rms_value} | "
             f"time: {time}"
         )
-
+    """
     """
     analyzer = IntotationAnalyzer(pitches, pitch_times, score_events)
     events_ok = analyzer.get_intonation_bool()
@@ -58,12 +62,10 @@ def main():
         print(f"bad: {frame}")
     """
 
+    first_msr_time = time_mapper.get_seconds_per_bar()
+
     pitch_filter = PitchFilter(
-        f0,
-        voiced_flags,
-        voiced_probs,
-        times,
-        rms,
+        f0, voiced_flags, voiced_probs, times, rms, msr_time_secs=first_msr_time
     )
 
     filtered_pitches, filtered_times = pitch_filter.filter_frames()
