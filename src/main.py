@@ -33,16 +33,16 @@ def main():
 
     start_sec, end_sec = time_mapper.get_start_end_in_seconds()
 
-    (f0, voiced_flag, voiced_prob), rms_db, times = PitchExtractor(
+    (f0, voiced_flags, voiced_probs), rms, times = PitchExtractor(
         audio, start_sec, end_sec
     ).extract_pitches_and_times()
 
-    for f0_value, voiced_flag_value, voiced_prob_value, rms_db_value, time in zip(
-        f0, voiced_flag, voiced_prob, rms_db, times
+    for f0_value, voiced_flag_value, voiced_prob_value, rms_value, time in zip(
+        f0, voiced_flags, voiced_probs, rms, times
     ):
         print(
             f"audio_properties: {(f0_value, voiced_flag_value, voiced_prob_value)} | "
-            f"rms_db: {rms_db_value} | "
+            f"rms: {rms_value} | "
             f"time: {time}"
         )
 
@@ -57,6 +57,19 @@ def main():
     for frame in bad_frames:
         print(f"bad: {frame}")
     """
+
+    pitch_filter = PitchFilter(
+        f0,
+        voiced_flags,
+        voiced_probs,
+        times,
+        rms,
+    )
+
+    filtered_pitches, filtered_times = pitch_filter.filter_frames()
+
+    for filtered_pitch, filtered_time in zip(filtered_pitches, filtered_times):
+        print(f"filtered_pitch: {filtered_pitch} | filtered_time: {filtered_time}")
 
 
 if __name__ == "__main__":

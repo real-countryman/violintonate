@@ -479,7 +479,7 @@ class IntotationAnalyzer:
 
 @dataclass
 class PitchFilter:
-    pitches: np.ndarray
+    f0: np.ndarray
     voiced_flags: np.ndarray
     voiced_probs: np.ndarray
     times: np.ndarray
@@ -488,40 +488,18 @@ class PitchFilter:
 
     # May need tweaking
     VOICED_PROB_THRESHOLD = 0.8
-    RMS_DB_THRESHOLD = -1
+    RMS_THRESHOLD = -1
 
     def __post_init__(self):
         self._set_rms_db_threshold()
 
-    def filter_frames(
-        self,
-        f0,
-        voiced_flag,
-        voiced_prob,
-        rms_db,
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def filter_frames(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Removes unreliable pitch frames.
 
         A frame is kept only if it is voiced, has a valid f0 value, has a voiced
         probability above VOICED_PROB_THRESHOLD, and is loud enough according to
-        RMS_DB_THRESHOLD.
-
-        Args:
-            f0:
-                Estimated fundamental frequency values in Hertz.
-
-            voiced_flag:
-                Boolean array indicating whether each frame is considered voiced.
-
-            voiced_prob:
-                Probability that each frame is voiced.
-
-            times:
-                Timestamp of each frame in seconds.
-
-            rms_db:
-                RMS energy of each frame converted to decibels.
+        RMS_THRESHOLD.
 
         Returns:
             A tuple containing:
@@ -533,14 +511,14 @@ class PitchFilter:
                     Timestamps corresponding to the filtered pitch values.
         """
         mask = (
-            (voiced_flag == True)
-            & ~np.isnan(f0)
-            & (voiced_prob > self.VOICED_PROB_THRESHOLD)
-            & (rms_db > self.RMS_DB_THRESHOLD)
+            (self.voiced_flags == True)
+            & ~np.isnan(self.f0)
+            & (self.voiced_probs > self.VOICED_PROB_THRESHOLD)
+            & (self.rms > self.RMS_THRESHOLD)
         )
 
         times_clean = self.times[mask]
-        f0_clean = f0[mask]
+        f0_clean = self.f0[mask]
 
         pitches = f0_clean
         pitch_times = times_clean
@@ -549,7 +527,7 @@ class PitchFilter:
 
     def _set_rms_db_threshold(self):
         """
-        Sets RMS_DB_THRESHOLD based on the average RMS dB value
+        Sets RMS_THRESHOLD based on the average RMS value
         during the first measure, which is assumed to be quiet/count-in.
         """
 
@@ -562,4 +540,4 @@ class PitchFilter:
 
         quiet_avg_db = np.average(quiet_rms)
 
-        self.RMS_DB_THRESHOLD = 2 * quiet_avg_db
+        self.RMS_THRESHOLD = 2 * quiet_avg_db
