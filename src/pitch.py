@@ -218,6 +218,12 @@ class ScoreTimeMapper:
 
         return score_events
 
+    def get_seconds_per_bar(self):
+        ql_per_bar = self._quarter_lengths_per_bar()
+        secs_per_bar = self._quarter_length_to_seconds(ql_per_bar)
+
+        return secs_per_bar
+
     def _quarter_length_to_seconds(self, ql) -> float:
         """
         Converts a duration or offset in quarter lengths into seconds.
