@@ -2,6 +2,7 @@ import sys
 from src.audio import *
 from src.pitch import *
 from src.xml_parsing import *
+from src.graphs import *
 
 
 def main():
@@ -60,6 +61,8 @@ def main():
         print(
             f"pitch: {pitch}, pitch_time: {pitch_time}, cent_deviation: {cent_deviation}"
         )
+
+    show_and_save_graph(times, rms, "Times", "RMS", "rms_graph")
 
 
 if __name__ == "__main__":
