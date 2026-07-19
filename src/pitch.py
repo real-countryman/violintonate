@@ -11,6 +11,10 @@ FRAME_LENGTH = 2048
 HOP_LENGTH = 256
 
 
+def hz_to_midi(pitches_hz: np.ndarray) -> np.ndarray:
+    return 69 + 12 * np.log2(pitches_hz / 440.0)
+
+
 @dataclass
 class ScoreTimeMapper:
     """
@@ -441,21 +445,24 @@ class PitchExtractor:
 
 
 @dataclass
-class IntotationAnalyzer:
+class IntonationAnalyzer:
     # TODO intonation_tolerance_th (in cents)
     pitches: np.ndarray
     pitch_times: np.ndarray
     score_events: list[dict]
 
     # 1 semitone = 100 cents, may need tweaking
-    INTONATION_TOLERANCE_CENTS = 10
+    INTONATION_TOLERANCE_CENTS = 10.0
 
-    def get_intonation(self) -> list[tuple[float, float, float]]:
+    def get_intonation(self) -> list[tuple[float, float, float | None]]:
         result = []
 
         for pitch, pitch_time in zip(self.pitches, self.pitch_times):
-            cent_deviation = self._compare_pitch_with_score_event(pitch, pitch_time)
-            result.append((pitch, pitch_time, cent_deviation))
+            cent_deviation = self._compare_pitch_with_score_event(
+                float(pitch),
+                float(pitch_time),
+            )
+            result.append((float(pitch), float(pitch_time), cent_deviation))
 
         return result
 
@@ -463,24 +470,33 @@ class IntotationAnalyzer:
         analyzed_frames = self.get_intonation()
 
         return [
-            (pitch_time, pitch)
+            (pitch_time, pitch, cent_deviation)
             for pitch_time, pitch, cent_deviation in analyzed_frames
-            if cent_deviation <= self.INTONATION_TOLERANCE_CENTS
+            if cent_deviation is not None
+            and abs(cent_deviation) > self.INTONATION_TOLERANCE_CENTS
         ]
 
-    def _compare_pitch_with_score_event(self, pitch: float, pitch_time: float) -> float:
+    def _compare_pitch_with_score_event(
+        self,
+        pitch: float,
+        pitch_time: float,
+    ) -> float | None:
         score_event = self._find_score_event_at_time(pitch_time)
 
         if score_event is None:
             return False
 
         expected_midi = score_event["midi"]
+        expected_midi_value = float(expected_midi[0])
 
-        cents_error = (pitch - expected_midi) * 100
+        cents_error = (pitch - expected_midi_value) * 100.0
 
-        return cents_error <= self.INTONATION_TOLERANCE_CENTS
+        return cents_error
 
-    def _find_score_event_at_time(self, pitch_time: float) -> dict | None:
+    def _find_score_event_at_time(
+        self,
+        pitch_time: float,
+    ) -> dict | None:
         for event in self.score_events:
             if event["kind"] != "note":
                 continue

@@ -31,9 +31,6 @@ def main():
     score_events = time_mapper.crop_score_events(score_events)
     score_events = time_mapper.score_events_add_times(score_events)
 
-    for event in score_events:
-        print(event)
-
     start_sec, end_sec = time_mapper.get_start_end_in_seconds()
 
     (f0, voiced_flags, voiced_probs), rms, times = PitchExtractor(
@@ -48,8 +45,21 @@ def main():
 
     filtered_pitches, filtered_times = pitch_filter.filter_frames()
 
-    for filtered_pitch, filtered_time in zip(filtered_pitches, filtered_times):
-        print(f"filtered_pitch: {filtered_pitch} | filtered_time: {filtered_time}")
+    filtered_pitches = hz_to_midi(filtered_pitches)
+
+    intonation_analyzer = IntonationAnalyzer(
+        filtered_pitches, filtered_times, score_events
+    )
+
+    bad_frames = intonation_analyzer.get_bad_frames()
+
+    for event in score_events:
+        print(event)
+
+    for pitch, pitch_time, cent_deviation in bad_frames:
+        print(
+            f"pitch: {pitch}, pitch_time: {pitch_time}, cent_deviation: {cent_deviation}"
+        )
 
 
 if __name__ == "__main__":
