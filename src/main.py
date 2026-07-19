@@ -22,9 +22,9 @@ def main():
     time_mapper = ScoreTimeMapper(
         audio.bpm,
         audio.time_signature,
-        start_msr=0,
+        start_msr=9,
         start_offset=0,
-        end_msr=10,
+        end_msr=17,
         end_offset=0,
     )
 
@@ -39,28 +39,6 @@ def main():
     (f0, voiced_flags, voiced_probs), rms, times = PitchExtractor(
         audio, start_sec, end_sec
     ).extract_pitches_and_times()
-
-    """
-    for f0_value, voiced_flag_value, voiced_prob_value, rms_value, time in zip(
-        f0, voiced_flags, voiced_probs, rms, times
-    ):
-        print(
-            f"audio_properties: {(f0_value, voiced_flag_value, voiced_prob_value)} | "
-            f"rms: {rms_value} | "
-            f"time: {time}"
-        )
-    """
-    """
-    analyzer = IntotationAnalyzer(pitches, pitch_times, score_events)
-    events_ok = analyzer.get_intonation_bool()
-    bad_frames = analyzer.get_bad_frames()
-
-    for event in events_ok:
-        print(f"all: {event}")
-
-    for frame in bad_frames:
-        print(f"bad: {frame}")
-    """
 
     first_msr_time = time_mapper.get_seconds_per_bar()
 

@@ -172,7 +172,7 @@ class ScoreTimeMapper:
         start_sec = self._quarter_length_to_seconds(start_ql)
         end_sec = self._quarter_length_to_seconds(end_ql)
 
-        return start_sec, end_sec
+        return 0.0, end_sec - start_sec
 
     def get_start_end_in_quarter_lengths(self) -> tuple[float, float]:
         start = self._measure_offset_to_quarter_length(
@@ -199,6 +199,8 @@ class ScoreTimeMapper:
     def score_events_add_times(self, score_events: list[dict]) -> list[dict]:
         """
         Adds start_sec and end_sec to each score event in place.
+        start_sec starts from zero, relative to the audio and assumes
+        the first measure of the audio is a beat countdown.
 
         Args:
             score_events:
@@ -208,12 +210,19 @@ class ScoreTimeMapper:
         Returns:
             The same mutated list, with each event modified in place.
         """
+        start_ql = score_events[0]["start_quarter_length"]
+        countdown = self.get_seconds_per_bar()
+
         for event in score_events:
-            event["start_sec"] = self._quarter_length_to_seconds(
-                event["start_quarter_length"]
+            event["start_sec"] = float(
+                self._quarter_length_to_seconds(
+                    event["start_quarter_length"] - start_ql
+                )
+                + countdown
             )
-            event["end_sec"] = self._quarter_length_to_seconds(
-                event["end_quarter_length"]
+            event["end_sec"] = float(
+                self._quarter_length_to_seconds(event["end_quarter_length"] - start_ql)
+                + countdown
             )
 
         return score_events
@@ -441,34 +450,33 @@ class IntotationAnalyzer:
     # 1 semitone = 100 cents, may need tweaking
     INTONATION_TOLERANCE_CENTS = 10
 
-    def get_intonation_bool(self) -> list[tuple[float, float, bool]]:
+    def get_intonation(self) -> list[tuple[float, float, float]]:
         result = []
 
         for pitch, pitch_time in zip(self.pitches, self.pitch_times):
-            ok = self._compare_pitch_with_score_event(pitch, pitch_time)
-            result.append((pitch, pitch_time, ok))
+            cent_deviation = self._compare_pitch_with_score_event(pitch, pitch_time)
+            result.append((pitch, pitch_time, cent_deviation))
 
         return result
 
     def get_bad_frames(self) -> list[tuple[float, float]]:
-        analyzed_frames = self.get_intonation_bool()
+        analyzed_frames = self.get_intonation()
 
         return [
-            (pitch_time, pitch) for pitch_time, pitch, ok in analyzed_frames if not ok
+            (pitch_time, pitch)
+            for pitch_time, pitch, cent_deviation in analyzed_frames
+            if cent_deviation <= self.INTONATION_TOLERANCE_CENTS
         ]
 
-    def _compare_pitch_with_score_event(self, pitch: float, pitch_time: float) -> bool:
+    def _compare_pitch_with_score_event(self, pitch: float, pitch_time: float) -> float:
         score_event = self._find_score_event_at_time(pitch_time)
 
         if score_event is None:
             return False
 
-        if score_event["kind"] != "note":
-            return False
-
         expected_midi = score_event["midi"]
 
-        cents_error = abs((pitch - expected_midi) * 100)
+        cents_error = (pitch - expected_midi) * 100
 
         return cents_error <= self.INTONATION_TOLERANCE_CENTS
 
