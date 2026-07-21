@@ -1,4 +1,5 @@
 /.venv
-/input
 *__pycache__
 /output
+*.png
+*.zip

@@ -3,6 +3,7 @@ from pathlib import Path
 
 import librosa
 import numpy as np
+import math
 from bisect import bisect_left
 
 from src.audio import Audio
@@ -571,3 +572,28 @@ class PitchFilter:
         quiet_avg_db = np.average(quiet_rms)
 
         self.RMS_THRESHOLD = 2 * quiet_avg_db
+
+
+# TODO
+@dataclass
+class RmsThresholdEstimator:
+    rms: np.ndarray
+    times: np.ndarray
+    score_events: list[dict]
+
+    NOTE_BOUNDARY_SEARCH_RADIUS_SEC = 0.15
+
+    def add_rms_onsets(self):
+        for cur, next in zip(self.score_events, self.score_events[1:]):
+            if not math.isclose(cur["end_sec"], next["start_sec"]):
+                librosa.onset.onset_detect()
+        return
+
+    def add_rms_offsets(self):
+        return
+
+    def add_legato_onsets(self):
+        return
+
+    def add_legato_offsets(self):
+        return
