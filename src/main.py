@@ -40,7 +40,7 @@ def main():
 
     first_msr_time = time_mapper.get_seconds_per_bar()
 
-    pitch_filter = PitchFilter(
+    pitch_filter = VoicedPitchFilter(
         f0, voiced_flags, voiced_probs, times, rms, msr_time_secs=first_msr_time
     )
 

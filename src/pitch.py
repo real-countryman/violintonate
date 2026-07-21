@@ -509,7 +509,7 @@ class IntonationAnalyzer:
 
 
 @dataclass
-class PitchFilter:
+class VoicedPitchFilter:
     f0: np.ndarray
     voiced_flags: np.ndarray
     voiced_probs: np.ndarray
