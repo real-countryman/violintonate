@@ -54,15 +54,24 @@ def main():
 
     bad_frames = intonation_analyzer.get_bad_frames()
 
-    for event in score_events:
-        print(event)
-
+    """
     for pitch, pitch_time, cent_deviation in bad_frames:
         print(
             f"pitch: {pitch}, pitch_time: {pitch_time}, cent_deviation: {cent_deviation}"
         )
+    """
 
-    show_and_save_graph(times, rms, "Times", "RMS", "rms_graph")
+    th_estimator = RmsThresholdEstimator(rms, times, score_events)
+    th_estimator.add_rms_offsets_onsets()
+
+    for event in score_events:
+        print(event)
+
+    onsets_offsets = th_estimator.get_rms_idxs_vals()
+    for val in onsets_offsets:
+        print(val)
+
+    show_and_save_graph(times, rms, onsets_offsets, "Times", "RMS", "rms_graph")
 
 
 if __name__ == "__main__":

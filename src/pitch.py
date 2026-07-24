@@ -574,7 +574,6 @@ class VoicedPitchFilter:
         self.RMS_THRESHOLD = 2 * quiet_avg_db
 
 
-# TODO
 @dataclass
 class RmsThresholdEstimator:
     rms: np.ndarray
@@ -583,17 +582,87 @@ class RmsThresholdEstimator:
 
     NOTE_BOUNDARY_SEARCH_RADIUS_SEC = 0.15
 
-    def add_rms_onsets(self):
-        for cur, next in zip(self.score_events, self.score_events[1:]):
-            if not math.isclose(cur["end_sec"], next["start_sec"]):
-                librosa.onset.onset_detect()
-        return
+    def get_rms_idxs_vals(self) -> list[dict[np.int64, np.float32]]:
+        result: list[dict[np.int64, np.float32]] = []
 
-    def add_rms_offsets(self):
-        return
+        if any(
+            "start_sec" not in event or "end_sec" not in event
+            for event in self.score_events
+        ):
+            raise ValueError("Some events are missing RMS info")
 
-    def add_legato_onsets(self):
-        return
+        for event in self.score_events:
+            vals = {
+                "rms_offset_idx": event["rms_offset_idx"],
+                "rms_offset_value": event["rms_offset_value"],
+            }
 
-    def add_legato_offsets(self):
+            result.append(vals)
+
+        return result
+
+    def add_rms_offsets_onsets(self) -> None:
+        self._add_rms_offsets()
+        self._add_rms_onsets()
+
+    def _add_rms_offsets(self) -> None:
+        for event in self.score_events:
+            left_idx, right_idx = self._get_shortened_rms_indexes(event["end_sec"])
+
+            local_idx, rms_value = self._leftmost_local_minimum(
+                self.rms[left_idx:right_idx]
+            )
+
+            global_idx = None
+            if local_idx is not None:
+                global_idx = left_idx + local_idx
+
+            event["rms_offset_idx"] = global_idx
+            event["rms_offset_value"] = rms_value
+
+    def _add_rms_onsets(self) -> None:
+        for event in self.score_events:
+            left_idx, right_idx = self._get_shortened_rms_indexes(event["start_sec"])
+
+            local_idx, rms_value = self._rightmost_local_minimum(
+                self.rms[left_idx:right_idx]
+            )
+
+            global_idx = None
+            if local_idx is not None:
+                global_idx = left_idx + local_idx
+
+            event["rms_onset_idx"] = global_idx
+            event["rms_onset_value"] = rms_value
+
+    def _rightmost_local_minimum(self, y: np.ndarray):
+        y = np.asarray(y)
+
+        for i in range(len(y) - 2, 0, -1):
+            if y[i] < y[i - 1] and y[i] < y[i + 1]:
+                return i, y[i]
+
+        return None, None
+
+    def _leftmost_local_minimum(self, y: np.ndarray):
+        y = np.asarray(y)
+
+        for i in range(1, len(y) - 1):
+            if y[i] < y[i - 1] and y[i] < y[i + 1]:
+                return i, y[i]
+
+        return None, None
+
+    def _get_shortened_rms_indexes(self, exp_time: float) -> tuple[int, int]:
+
+        max_time = exp_time + self.NOTE_BOUNDARY_SEARCH_RADIUS_SEC
+        min_time = exp_time - self.NOTE_BOUNDARY_SEARCH_RADIUS_SEC
+
+        left_idx = np.searchsorted(self.times, min_time, side="left")
+        right_idx = np.searchsorted(self.times, max_time, side="right")
+
+        return left_idx, right_idx
+
+    # TODO
+    def _validate(self):
         return
