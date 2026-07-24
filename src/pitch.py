@@ -10,10 +10,22 @@ from src.audio import Audio
 
 FRAME_LENGTH = 2048
 HOP_LENGTH = 256
+NOTE_BOUNDARY_SEARCH_RADIUS_SEC = 0.15
 
 
 def hz_to_midi(pitches_hz: np.ndarray) -> np.ndarray:
     return 69 + 12 * np.log2(pitches_hz / 440.0)
+
+
+def get_shortened_rms_indexes(times: np.ndarray, exp_time: float) -> tuple[int, int]:
+
+    max_time = exp_time + NOTE_BOUNDARY_SEARCH_RADIUS_SEC
+    min_time = exp_time - NOTE_BOUNDARY_SEARCH_RADIUS_SEC
+
+    left_idx = np.searchsorted(times, min_time, side="left")
+    right_idx = np.searchsorted(times, max_time, side="right")
+
+    return left_idx, right_idx
 
 
 @dataclass
@@ -580,8 +592,6 @@ class RmsThresholdEstimator:
     times: np.ndarray
     score_events: list[dict]
 
-    NOTE_BOUNDARY_SEARCH_RADIUS_SEC = 0.15
-
     def get_rms_idxs_vals(self) -> list[dict[np.int64, np.float32]]:
         result: list[dict[np.int64, np.float32]] = []
 
@@ -607,7 +617,10 @@ class RmsThresholdEstimator:
 
     def _add_rms_offsets(self) -> None:
         for event in self.score_events:
-            left_idx, right_idx = self._get_shortened_rms_indexes(event["end_sec"])
+            left_idx, right_idx = get_shortened_rms_indexes(
+                self.times,
+                event["end_sec"],
+            )
 
             local_idx, rms_value = self._leftmost_local_minimum(
                 self.rms[left_idx:right_idx]
@@ -622,7 +635,10 @@ class RmsThresholdEstimator:
 
     def _add_rms_onsets(self) -> None:
         for event in self.score_events:
-            left_idx, right_idx = self._get_shortened_rms_indexes(event["start_sec"])
+            left_idx, right_idx = get_shortened_rms_indexes(
+                self.times,
+                event["start_sec"],
+            )
 
             local_idx, rms_value = self._rightmost_local_minimum(
                 self.rms[left_idx:right_idx]
@@ -653,15 +669,22 @@ class RmsThresholdEstimator:
 
         return None, None
 
-    def _get_shortened_rms_indexes(self, exp_time: float) -> tuple[int, int]:
+    # TODO
+    def _validate(self):
+        return
 
-        max_time = exp_time + self.NOTE_BOUNDARY_SEARCH_RADIUS_SEC
-        min_time = exp_time - self.NOTE_BOUNDARY_SEARCH_RADIUS_SEC
 
-        left_idx = np.searchsorted(self.times, min_time, side="left")
-        right_idx = np.searchsorted(self.times, max_time, side="right")
+@dataclass
+class PitchChangeDetector:
+    pitches: np.ndarray
+    pitch_times: np.ndarray
+    score_events: list[dict]
 
-        return left_idx, right_idx
+    def get_tone_transitions(self) -> list[dict]:
+        return
+
+    def add_tone_transitions(self) -> None:
+        return
 
     # TODO
     def _validate(self):
