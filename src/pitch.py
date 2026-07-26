@@ -17,7 +17,7 @@ def hz_to_midi(pitches_hz: np.ndarray) -> np.ndarray:
     return 69 + 12 * np.log2(pitches_hz / 440.0)
 
 
-def get_shortened_rms_indexes(times: np.ndarray, exp_time: float) -> tuple[int, int]:
+def get_start_end_time_idx(times: np.ndarray, exp_time: float) -> tuple[int, int]:
 
     max_time = exp_time + NOTE_BOUNDARY_SEARCH_RADIUS_SEC
     min_time = exp_time - NOTE_BOUNDARY_SEARCH_RADIUS_SEC
@@ -345,7 +345,7 @@ class RmsThresholdEstimator:
 
     def _add_rms_offsets(self) -> None:
         for event in self.score_events:
-            left_idx, right_idx = get_shortened_rms_indexes(
+            left_idx, right_idx = get_start_end_time_idx(
                 self.times,
                 event["end_sec"],
             )
@@ -368,7 +368,7 @@ class RmsThresholdEstimator:
 
     def _add_rms_onsets(self) -> None:
         for event in self.score_events:
-            left_idx, right_idx = get_shortened_rms_indexes(
+            left_idx, right_idx = get_start_end_time_idx(
                 self.times,
                 event["start_sec"],
             )
