@@ -329,6 +329,8 @@ class RmsThresholdEstimator:
             vals = {
                 "rms_offset_idx": event["rms_offset_idx"],
                 "rms_offset_value": event["rms_offset_value"],
+                "rms_onset_idx": event["rms_onset_idx"],
+                "rms_onset_value": event["rms_onset_value"],
             }
 
             result.append(vals)

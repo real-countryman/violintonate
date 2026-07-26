@@ -72,7 +72,7 @@ def main():
     for val in onsets_offsets:
         print(val)
 
-    show_and_save_graph(times, rms, onsets_offsets, "Times", "RMS", "rms_graph")
+    show_and_save_graph(times, rms, onsets_offsets, "Times", "RMS", "rms_graph_new")
 
 
 if __name__ == "__main__":

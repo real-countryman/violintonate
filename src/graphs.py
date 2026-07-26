@@ -14,19 +14,35 @@ def show_and_save_graph(
 
     plt.plot(x_vals, y_vals, label="RMS")
 
+    onset_label_added = False
+    offset_label_added = False
+
     for point in points:
-        idx = point["rms_offset_idx"]
-        value = point["rms_offset_value"]
+        onset_idx = point.get("rms_onset_idx")
+        onset_value = point.get("rms_onset_value")
 
-        if idx is None or value is None:
-            continue
+        if onset_idx is not None and onset_value is not None:
+            plt.scatter(
+                x_vals[onset_idx],
+                onset_value,
+                marker="^",
+                zorder=3,
+                label="RMS onset" if not onset_label_added else None,
+            )
+            onset_label_added = True
 
-        plt.scatter(
-            x_vals[idx],
-            value,
-            marker="o",
-            zorder=3,
-        )
+        offset_idx = point.get("rms_offset_idx")
+        offset_value = point.get("rms_offset_value")
+
+        if offset_idx is not None and offset_value is not None:
+            plt.scatter(
+                x_vals[offset_idx],
+                offset_value,
+                marker="o",
+                zorder=3,
+                label="RMS offset" if not offset_label_added else None,
+            )
+            offset_label_added = True
 
     plt.xlabel(x_label)
     plt.ylabel(y_label)
