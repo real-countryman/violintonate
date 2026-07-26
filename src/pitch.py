@@ -331,6 +331,8 @@ class RmsThresholdEstimator:
                 "rms_offset_value": event["rms_offset_value"],
                 "rms_onset_idx": event["rms_onset_idx"],
                 "rms_onset_value": event["rms_onset_value"],
+                "rms_onset_time": event["rms_onset_time"],
+                "rms_offset_time": event["rms_offset_time"],
             }
 
             result.append(vals)
@@ -359,6 +361,11 @@ class RmsThresholdEstimator:
             event["rms_offset_idx"] = global_idx
             event["rms_offset_value"] = rms_value
 
+            if global_idx is not None:
+                event["rms_offset_time"] = self.times[global_idx]
+            else:
+                event["rms_offset_time"] = None
+
     def _add_rms_onsets(self) -> None:
         for event in self.score_events:
             left_idx, right_idx = get_shortened_rms_indexes(
@@ -376,6 +383,11 @@ class RmsThresholdEstimator:
 
             event["rms_onset_idx"] = global_idx
             event["rms_onset_value"] = rms_value
+
+            if global_idx is not None:
+                event["rms_onset_time"] = self.times[global_idx]
+            else:
+                event["rms_onset_time"] = None
 
     def _rightmost_local_minimum(self, y: np.ndarray):
         y = np.asarray(y)

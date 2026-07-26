@@ -65,9 +65,6 @@ def main():
     th_estimator = RmsThresholdEstimator(rms, times, score_events)
     th_estimator.add_rms_offsets_onsets()
 
-    for event in score_events:
-        print(event)
-
     onsets_offsets = th_estimator.get_rms_idxs_vals()
     for val in onsets_offsets:
         print(val)
