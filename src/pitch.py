@@ -186,6 +186,7 @@ class IntonationAnalyzer:
     # TODO intonation_tolerance_th (in cents)
     pitches: np.ndarray
     pitch_times: np.ndarray
+    # TODO make it an argument not a property
     score_events: list[dict]
 
     # 1 semitone = 100 cents, may need tweaking
@@ -314,6 +315,7 @@ class VoicedPitchFilter:
 class RmsThresholdEstimator:
     rms: np.ndarray
     times: np.ndarray
+    # TODO make an argument, not a class property
     score_events: list[dict]
 
     def get_rms_idxs_vals(self) -> list[dict[np.int64, np.float32]]:
