@@ -32,7 +32,7 @@ setup:
 	$(PIP) install --upgrade pip
 	@if [ -f requirements.txt ]; then $(PIP) install -r requirements.txt; fi
 
-run: setup
+run:
 	$(PYTHON_VENV) -m src.main $(ARGS)
 
 test: setup

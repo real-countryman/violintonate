@@ -3,7 +3,7 @@ from pathlib import Path
 
 import librosa
 import numpy as np
-import math
+import pandas as pd
 from bisect import bisect_left
 
 from src.audio import Audio
@@ -420,11 +420,48 @@ class PitchChangeDetector:
     pitch_times: np.ndarray
     score_events: list[dict]
 
-    def get_tone_transitions(self) -> list[dict]:
-        return
+    ROLLING_MEDIAN_COUNT = 7
 
-    def add_tone_transitions(self) -> None:
-        return
+    def get_score_events_rolling_medians_copy(self) -> list[dict]:
+        events_copy = [event.copy() for event in self.score_events]
+
+        for cur_event, next_event in zip(events_copy, events_copy[1:]):
+            # Both must be notes (no rests)
+            if cur_event["kind"] != "note" and next_event["kind"] != "note":
+                continue
+            # Must be different pitches
+            if cur_event["pitch_name"] == next_event["pitch_name"]:
+                continue
+
+            left_idx, right_idx = get_start_end_time_idx(
+                self.pitch_times, cur_event["end_sec"]
+            )
+
+            left_values = self.pitches[left_idx - self.ROLLING_MEDIAN_COUNT : left_idx]
+
+            right_values = self.pitches[
+                right_idx : right_idx + self.ROLLING_MEDIAN_COUNT
+            ]
+
+            lv_rolling_median, rv_rolling_median = (
+                self._get_rolling_medians_left_right_values(left_values, right_values)
+            )
+
+            cur_event["tone_transition"] = {
+                "end_rolling_median": lv_rolling_median,
+                "start_rolling_median": rv_rolling_median,
+            }
+
+        return events_copy
+
+    def _get_rolling_medians_left_right_values(self, left_values, right_values):
+        lv = pd.Series(left_values)
+        rv = pd.Series(right_values)
+
+        lv_rolling_median = lv.rolling(window=3).median().to_numpy()
+        rv_rolling_median = rv.rolling(window=3).median().to_numpy()
+
+        return lv_rolling_median, rv_rolling_median
 
     # TODO
     def _validate(self):
