@@ -449,13 +449,13 @@ class PitchChangeDetector:
                 right_idx : right_idx + self.ROLLING_MEDIAN_COUNT
             ]
 
-            lv_rolling_median, rv_rolling_median = (
-                self._get_rolling_medians_left_right_values(left_values, right_values)
+            left_pitch, right_pitch = self._get_left_right_rolling_median_pitch(
+                left_values, right_values
             )
 
             cur_event["tone_transition"] = {
-                "end_rolling_median": lv_rolling_median,
-                "start_rolling_median": rv_rolling_median,
+                "left_pitch": left_pitch,
+                "right_pitch": right_pitch,
             }
 
         return events_copy
@@ -464,10 +464,36 @@ class PitchChangeDetector:
         lv = pd.Series(left_values)
         rv = pd.Series(right_values)
 
-        lv_rolling_median = lv.rolling(window=3).median().to_numpy()
-        rv_rolling_median = rv.rolling(window=3).median().to_numpy()
+        lv_rolling_median = (
+            lv.rolling(
+                window=3,
+                center=True,
+                min_periods=2,
+            )
+            .median()
+            .to_numpy()
+        )
+        rv_rolling_median = (
+            rv.rolling(
+                window=3,
+                center=True,
+                min_periods=2,
+            )
+            .median()
+            .to_numpy()
+        )
 
         return lv_rolling_median, rv_rolling_median
+
+    def _get_left_right_rolling_median_pitch(self, left_values, right_values):
+        left_pitches, right_pitches = self._get_rolling_medians_left_right_values(
+            left_values, right_values
+        )
+
+        left_pitch = np.nanmedian(left_pitches)
+        right_pitch = np.nanmedian(right_pitches)
+
+        return left_pitch, right_pitch
 
     # TODO
     def _validate(self):
