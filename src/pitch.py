@@ -329,12 +329,12 @@ class RmsThresholdEstimator:
 
         for event in self.score_events:
             vals = {
-                "rms_offset_idx": event["rms_offset_idx"],
-                "rms_offset_value": event["rms_offset_value"],
-                "rms_onset_idx": event["rms_onset_idx"],
-                "rms_onset_value": event["rms_onset_value"],
-                "rms_onset_time": event["rms_onset_time"],
-                "rms_offset_time": event["rms_offset_time"],
+                "rms_offset_idx": event["rms"]["rms_offset_idx"],
+                "rms_offset_value": event["rms"]["rms_offset_value"],
+                "rms_onset_idx": event["rms"]["rms_onset_idx"],
+                "rms_onset_value": event["rms"]["rms_onset_value"],
+                "rms_onset_time": event["rms"]["rms_onset_time"],
+                "rms_offset_time": event["rms"]["rms_offset_time"],
             }
 
             result.append(vals)
@@ -360,13 +360,16 @@ class RmsThresholdEstimator:
             if local_idx is not None:
                 global_idx = left_idx + local_idx
 
-            event["rms_offset_idx"] = global_idx
-            event["rms_offset_value"] = rms_value
+            event.setdefault("rms", {}).update(
+                {
+                    "rms_offset_idx": global_idx,
+                    "rms_offset_value": rms_value,
+                    "rms_offset_time": None,
+                }
+            )
 
             if global_idx is not None:
-                event["rms_offset_time"] = self.times[global_idx]
-            else:
-                event["rms_offset_time"] = None
+                event["rms"]["rms_offset_time"] = self.times[global_idx]
 
     def _add_rms_onsets(self) -> None:
         for event in self.score_events:
@@ -383,13 +386,16 @@ class RmsThresholdEstimator:
             if local_idx is not None:
                 global_idx = left_idx + local_idx
 
-            event["rms_onset_idx"] = global_idx
-            event["rms_onset_value"] = rms_value
+            event.setdefault("rms", {}).update(
+                {
+                    "rms_onset_idx": global_idx,
+                    "rms_onset_value": rms_value,
+                    "rms_onset_time": None,
+                }
+            )
 
             if global_idx is not None:
-                event["rms_onset_time"] = self.times[global_idx]
-            else:
-                event["rms_onset_time"] = None
+                event["rms"]["rms_onset_time"] = self.times[global_idx]
 
     def _rightmost_local_minimum(self, y: np.ndarray):
         y = np.asarray(y)
