@@ -27,7 +27,7 @@ def main():
         start_msr=9,
         start_offset=0,
         end_msr=17,
-        end_offset=0,
+        end_offset=3.0,
     )
 
     score_events = time_mapper.crop_score_events(score_events)
@@ -54,12 +54,12 @@ def main():
     )
 
     bad_frames = intonation_analyzer.get_bad_frames()
-    """
+
     for pitch, pitch_time, cent_deviation in bad_frames:
         print(
             f"pitch: {pitch}, pitch_time: {pitch_time}, cent_deviation: {cent_deviation}"
         )
-    """
+    return
     th_estimator = RmsThresholdEstimator(rms, times, score_events)
     th_estimator.add_rms_offsets_onsets()
 
@@ -74,11 +74,9 @@ def main():
         filtered_pitches, filtered_times, score_events
     )
 
-    score_events_tone_tranzitions = (
-        pitch_change_detector.get_score_events_rolling_medians_copy()
-    )
+    pitch_change_detector.add_tone_transitions()
 
-    for event in score_events_tone_tranzitions:
+    for event in score_events:
         print(event)
 
 

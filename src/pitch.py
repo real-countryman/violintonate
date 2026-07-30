@@ -428,12 +428,10 @@ class PitchChangeDetector:
 
     ROLLING_MEDIAN_COUNT = 7
 
-    def get_score_events_rolling_medians_copy(self) -> list[dict]:
-        events_copy = [event.copy() for event in self.score_events]
-
-        for cur_event, next_event in zip(events_copy, events_copy[1:]):
+    def add_tone_transitions(self) -> None:
+        for cur_event, next_event in zip(self.score_events, self.score_events[1:]):
             # Both must be notes (no rests)
-            if cur_event["kind"] != "note" and next_event["kind"] != "note":
+            if cur_event["kind"] != "note" or next_event["kind"] != "note":
                 continue
             # Must be different pitches
             if cur_event["pitch_name"] == next_event["pitch_name"]:
@@ -449,6 +447,11 @@ class PitchChangeDetector:
                 right_idx : right_idx + self.ROLLING_MEDIAN_COUNT
             ]
 
+            print("left_values:", left_values, "start_ql:", cur_event["start_sec"])
+            print("right_values:", right_values)
+            print("left shape:", np.asarray(left_values).shape)
+            print("right shape:", np.asarray(right_values).shape)
+
             left_pitch, right_pitch = self._get_left_right_rolling_median_pitch(
                 left_values, right_values
             )
@@ -457,8 +460,6 @@ class PitchChangeDetector:
                 "left_pitch": left_pitch,
                 "right_pitch": right_pitch,
             }
-
-        return events_copy
 
     def _get_rolling_medians_left_right_values(self, left_values, right_values):
         lv = pd.Series(left_values)

@@ -87,86 +87,16 @@ class ScoreTimeMapper:
     start_offset: float
     end_msr: int
     end_offset: float
-    bpm_beat_ql: float | None = None
-
-    def __post_init__(self):
-        """
-        Sets the default BPM beat unit if it was not provided, then validates
-        the initialized values.
-
-        If bpm_beat_ql is None, the default beat unit follows the denominator
-        of the time signature:
-
-            bpm_beat_ql = 4 / denominator
-
-        Examples:
-            4/4 -> bpm_beat_ql = 1.0
-            6/8 -> bpm_beat_ql = 0.5
-            2/2 -> bpm_beat_ql = 2.0
-        """
-        if self.bpm_beat_ql is None:
-            self.bpm_beat_ql = self._default_bpm_beat_ql()
-
-        self._validate()
-
-    def _default_bpm_beat_ql(self) -> float:
-        """
-        Calculates the default BPM beat unit from the time-signature denominator.
-
-        The default behavior is:
-
-            bpm_beat_ql = 4 / denominator
-
-        This means the BPM beat follows the written denominator of the meter.
-
-        Examples:
-            4/4:
-                denominator = 4
-                bpm_beat_ql = 4 / 4 = 1.0
-                BPM counts quarter notes.
-
-            3/4:
-                denominator = 4
-                bpm_beat_ql = 4 / 4 = 1.0
-                BPM counts quarter notes.
-
-            6/8:
-                denominator = 8
-                bpm_beat_ql = 4 / 8 = 0.5
-                BPM counts eighth notes.
-
-            2/2:
-                denominator = 2
-                bpm_beat_ql = 4 / 2 = 2.0
-                BPM counts half notes.
-
-        Returns:
-            The default BPM beat unit, expressed in quarter lengths.
-        """
-        _, denominator = self.time_signature
-        return 4 / denominator
 
     def get_start_end_in_seconds(self) -> tuple[float, float]:
-        """
-        Calculates the configured start and end score positions in seconds.
-
-        Returns:
-            A tuple in the form:
-
-                (start_seconds, end_seconds)
-
-            start_seconds:
-                Absolute time from the beginning of the score to the start position.
-
-            end_seconds:
-                Absolute time from the beginning of the score to the end position.
-        """
         start_ql, end_ql = self.get_start_end_in_quarter_lengths()
 
-        start_sec = self._quarter_length_to_seconds(start_ql)
-        end_sec = self._quarter_length_to_seconds(end_ql)
+        start_sec = self.get_seconds_per_bar() + self.start_offset
 
-        return 0.0, end_sec - start_sec
+        section_duration_ql = end_ql - start_ql
+        end_sec = start_sec + self._quarter_length_to_seconds(section_duration_ql)
+
+        return start_sec, end_sec
 
     def get_start_end_in_quarter_lengths(self) -> tuple[float, float]:
         start = self._measure_offset_to_quarter_length(
@@ -227,47 +157,9 @@ class ScoreTimeMapper:
 
         return secs_per_bar
 
-    def _quarter_length_to_seconds(self, ql) -> float:
-        """
-        Converts a duration or offset in quarter lengths into seconds.
-
-        A quarter length is a score-duration unit where:
-            - quarter note = 1.0
-            - eighth note = 0.5
-            - dotted quarter note = 1.5
-            - half note = 2.0
-            - whole note = 4.0
-
-        The BPM value tells how many beats happen per minute.
-        The bpm_beat_ql value tells how long one of those BPM beats is.
-
-        Formula:
-            seconds = ql * 60 / bpm / bpm_beat_ql
-
-        Examples:
-            If bpm = 60 and bpm_beat_ql = 1.0:
-                quarter note = 60 BPM
-                1 quarter length = 1 second
-
-            If bpm = 120 and bpm_beat_ql = 0.5:
-                eighth note = 120 BPM
-                1 eighth note = 0.5 seconds
-                1 quarter length = 1 second
-
-            If bpm = 60 and bpm_beat_ql = 1.5:
-                dotted quarter note = 60 BPM
-                1 dotted quarter note = 1 second
-                1 quarter length = 0.666... seconds
-
-        Args:
-            ql:
-                Duration or offset expressed in quarter lengths.
-
-        Returns:
-            The equivalent duration in seconds.
-        """
-        seconds_per_beat = 60 / self.bpm
-        return ql * seconds_per_beat / self.bpm_beat_ql
+    def _quarter_length_to_seconds(self, ql: float) -> float:
+        denominator = self.time_signature[1]
+        return ql * 60 / self.bpm * denominator / 4
 
     def _measure_offset_to_quarter_length(self, measure: int, offset: float) -> float:
         return measure * self._quarter_lengths_per_bar() + offset
