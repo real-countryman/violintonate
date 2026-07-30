@@ -88,13 +88,22 @@ class ScoreTimeMapper:
     end_msr: int
     end_offset: float
 
-    def get_start_end_in_seconds(self) -> tuple[float, float]:
+    def get_seconds_start_end_score_events(self) -> tuple[float, float]:
         start_ql, end_ql = self.get_start_end_in_quarter_lengths()
 
         start_sec = self.get_seconds_per_bar() + self.start_offset
 
         section_duration_ql = end_ql - start_ql
         end_sec = start_sec + self._quarter_length_to_seconds(section_duration_ql)
+
+        return start_sec, end_sec
+
+    def get_seconds_start_end_audio_with_count_in(self) -> tuple[float, float]:
+        start_score_sec, end_sec = self.get_seconds_start_end_score_events()
+        start_sec = start_score_sec - self.get_seconds_per_bar()
+
+        if start_sec < 0:
+            raise ValueError("Count in is too short!")
 
         return start_sec, end_sec
 
