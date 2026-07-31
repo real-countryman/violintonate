@@ -352,7 +352,7 @@ class RmsThresholdEstimator:
                 event["end_sec"],
             )
 
-            local_idx, rms_value = self._leftmost_local_minimum(
+            local_idx, rms_value = self._rightmost_local_minimum(
                 self.rms[left_idx:right_idx]
             )
 
@@ -378,7 +378,7 @@ class RmsThresholdEstimator:
                 event["start_sec"],
             )
 
-            local_idx, rms_value = self._rightmost_local_minimum(
+            local_idx, rms_value = self._leftmost_local_minimum(
                 self.rms[left_idx:right_idx]
             )
 
@@ -430,6 +430,11 @@ class PitchChangeDetector:
 
     def add_tone_transitions(self) -> None:
         for cur_event, next_event in zip(self.score_events, self.score_events[1:]):
+            cur_event["tone_transition"] = {
+                "cur_pitch": None,
+                "next_pitch": None,
+            }
+
             # Both must be notes (no rests)
             if cur_event["kind"] != "note" or next_event["kind"] != "note":
                 continue
@@ -447,21 +452,21 @@ class PitchChangeDetector:
                 right_idx : right_idx + self.ROLLING_MEDIAN_COUNT
             ]
 
-            print("left_values:", left_values, "start_ql:", cur_event["start_sec"])
-            print("right_values:", right_values)
-            print("left shape:", np.asarray(left_values).shape)
-            print("right shape:", np.asarray(right_values).shape)
-
-            left_pitch, right_pitch = self._get_left_right_rolling_median_pitch(
+            cur_pitch, next_pitch = self._get_cur_next_rolling_median_pitch(
                 left_values, right_values
             )
 
             cur_event["tone_transition"] = {
-                "left_pitch": left_pitch,
-                "right_pitch": right_pitch,
+                "cur_pitch": cur_pitch,
+                "next_pitch": next_pitch,
             }
 
-    def _get_rolling_medians_left_right_values(self, left_values, right_values):
+        self.score_events[-1]["tone_transition"] = {
+            "cur_pitch": None,
+            "next_pitch": None,
+        }
+
+    def _get_rolling_medians_cur_next_values(self, left_values, right_values):
         lv = pd.Series(left_values)
         rv = pd.Series(right_values)
 
@@ -486,8 +491,8 @@ class PitchChangeDetector:
 
         return lv_rolling_median, rv_rolling_median
 
-    def _get_left_right_rolling_median_pitch(self, left_values, right_values):
-        left_pitches, right_pitches = self._get_rolling_medians_left_right_values(
+    def _get_cur_next_rolling_median_pitch(self, left_values, right_values):
+        left_pitches, right_pitches = self._get_rolling_medians_cur_next_values(
             left_values, right_values
         )
 

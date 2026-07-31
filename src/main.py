@@ -41,21 +41,14 @@ def main():
         time_mapper.get_seconds_start_end_audio_with_count_in()
     )
 
-    print(
-        f"score_event_start_sec: {score_event_end_sec}, score_event_end_sec: {score_event_end_sec}\n"
-        f"audio_start_sec: {audio_start_sec}, audio_end_sec: {audio_end_sec}"
-    )
-
-    return
-
     (f0, voiced_flags, voiced_probs), rms, times = PitchExtractor(
-        audio, start_sec, end_sec
+        audio, audio_start_sec, audio_end_sec
     ).extract_pitches_and_times()
 
-    first_msr_time = time_mapper.get_seconds_per_bar()
+    msr_time_secs = time_mapper.get_seconds_per_bar()
 
     pitch_filter = VoicedPitchFilter(
-        f0, voiced_flags, voiced_probs, times, rms, msr_time_secs=first_msr_time
+        f0, voiced_flags, voiced_probs, times, rms, msr_time_secs=msr_time_secs
     )
 
     filtered_pitches, filtered_times = pitch_filter.filter_frames()
@@ -66,13 +59,16 @@ def main():
         filtered_pitches, filtered_times, score_events
     )
 
+    """
     bad_frames = intonation_analyzer.get_bad_frames()
 
     for pitch, pitch_time, cent_deviation in bad_frames:
         print(
             f"pitch: {pitch}, pitch_time: {pitch_time}, cent_deviation: {cent_deviation}"
         )
-    return
+    
+    """
+
     th_estimator = RmsThresholdEstimator(rms, times, score_events)
     th_estimator.add_rms_offsets_onsets()
 
