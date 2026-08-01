@@ -83,7 +83,8 @@ def main():
         filtered_pitches, filtered_times, score_events
     )
 
-    pitch_change_detector.add_tone_transitions()
+    pitch_change_detector.add_tone_transitions_frequencies()
+    pitch_change_detector.add_tone_transition_times()
 
     for event in score_events:
         print(event)

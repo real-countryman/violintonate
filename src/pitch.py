@@ -17,6 +17,7 @@ def hz_to_midi(pitches_hz: np.ndarray) -> np.ndarray:
     return 69 + 12 * np.log2(pitches_hz / 440.0)
 
 
+# TODO make NOTE_BOUNDARY_SEARCH_RADIUS_SEC a parameter
 def get_start_end_time_idx(times: np.ndarray, exp_time: float) -> tuple[int, int]:
 
     max_time = exp_time + NOTE_BOUNDARY_SEARCH_RADIUS_SEC
@@ -427,8 +428,9 @@ class PitchChangeDetector:
     score_events: list[dict]
 
     ROLLING_MEDIAN_COUNT = 7
+    SAME_PITCH_MIDI_TOLERANCE = 0.5
 
-    def add_tone_transitions(self) -> None:
+    def add_tone_transitions_frequencies(self) -> None:
         for cur_event, next_event in zip(self.score_events, self.score_events[1:]):
             cur_event["tone_transition"] = {
                 "cur_pitch": None,
@@ -465,6 +467,37 @@ class PitchChangeDetector:
             "cur_pitch": None,
             "next_pitch": None,
         }
+
+    def add_tone_transition_times(self) -> None:
+        for event in self.score_events[: len(self.score_events) - 2]:
+            left_idx, right_idx = get_start_end_time_idx(
+                self.pitch_times, float(event["end_sec"])
+            )
+
+            next_pitch = event["tone_transition"]["next_pitch"]
+            if next_pitch is None:
+                event["tone_transition"]["transition_time"] = None
+                continue
+
+            idx_shift = 0
+            for pitch_1, pitch_2, pitch_3 in zip(
+                self.pitches[left_idx:right_idx],
+                self.pitches[left_idx + 1 : right_idx + 1],
+                self.pitches[left_idx + 2 : right_idx + 2],
+            ):
+                if (
+                    abs(pitch_1 - next_pitch) < self.SAME_PITCH_MIDI_TOLERANCE
+                    and abs(pitch_2 - next_pitch) < self.SAME_PITCH_MIDI_TOLERANCE
+                    and abs(pitch_3 - next_pitch) < self.SAME_PITCH_MIDI_TOLERANCE
+                ):
+                    event["tone_transition"]["transition_time"] = self.pitch_times[
+                        left_idx + idx_shift
+                    ]
+                    break
+                else:
+                    idx_shift += 1
+
+        self.score_events[-1]["tone_transition"]["transition_time"] = None
 
     def _get_rolling_medians_cur_next_values(self, left_values, right_values):
         lv = pd.Series(left_values)
