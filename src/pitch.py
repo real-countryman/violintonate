@@ -312,12 +312,15 @@ class VoicedPitchFilter:
         self.RMS_THRESHOLD = 2 * quiet_avg_db
 
 
+# TODO think of modifiyng times and rms, maybe main should handle it?
 @dataclass
 class RmsThresholdEstimator:
     rms: np.ndarray
     times: np.ndarray
     # TODO make an argument, not a class property
     score_events: list[dict]
+
+    GROUP_SIZE = 5
 
     def get_rms_idxs_vals(self) -> list[dict[np.int64, np.float32]]:
         result: list[dict[np.int64, np.float32]] = []
@@ -343,18 +346,41 @@ class RmsThresholdEstimator:
         return result
 
     def add_rms_offsets_onsets(self) -> None:
-        self._add_rms_offsets()
-        self._add_rms_onsets()
+        mean_rms, mean_times = self._normalize_values()
+        self._add_rms_offsets(mean_rms, mean_times)
+        self._add_rms_onsets(mean_rms, mean_times)
 
-    def _add_rms_offsets(self) -> None:
+    def _normalize_values(self) -> tuple[np.ndarray, np.ndarray]:
+        return (
+            np.array(
+                [
+                    chunk.mean()
+                    for chunk in np.array_split(
+                        self.rms,
+                        np.arange(self.GROUP_SIZE, len(self.rms), self.GROUP_SIZE),
+                    )
+                ]
+            ),
+            np.array(
+                [
+                    np.median(chunk)
+                    for chunk in np.array_split(
+                        self.times,
+                        np.arange(self.GROUP_SIZE, len(self.times), self.GROUP_SIZE),
+                    )
+                ]
+            ),
+        )
+
+    def _add_rms_offsets(self, rms: np.ndarray, times: np.ndarray) -> None:
         for event in self.score_events:
             left_idx, right_idx = get_start_end_time_idx(
-                self.times,
+                times,
                 event["end_sec"],
             )
 
             local_idx, rms_value = self._rightmost_local_minimum(
-                self.rms[left_idx:right_idx]
+                rms[left_idx:right_idx]
             )
 
             global_idx = None
@@ -370,18 +396,16 @@ class RmsThresholdEstimator:
             )
 
             if global_idx is not None:
-                event["rms"]["rms_offset_time"] = self.times[global_idx]
+                event["rms"]["rms_offset_time"] = times[global_idx]
 
-    def _add_rms_onsets(self) -> None:
+    def _add_rms_onsets(self, rms: np.ndarray, times: np.ndarray) -> None:
         for event in self.score_events:
             left_idx, right_idx = get_start_end_time_idx(
-                self.times,
+                times,
                 event["start_sec"],
             )
 
-            local_idx, rms_value = self._leftmost_local_minimum(
-                self.rms[left_idx:right_idx]
-            )
+            local_idx, rms_value = self._leftmost_local_minimum(rms[left_idx:right_idx])
 
             global_idx = None
             if local_idx is not None:
@@ -396,7 +420,7 @@ class RmsThresholdEstimator:
             )
 
             if global_idx is not None:
-                event["rms"]["rms_onset_time"] = self.times[global_idx]
+                event["rms"]["rms_onset_time"] = times[global_idx]
 
     def _rightmost_local_minimum(self, y: np.ndarray):
         y = np.asarray(y)

@@ -77,7 +77,16 @@ def main():
     for val in onsets_offsets:
         print(val)
     """
-    # show_and_save_graph(times, rms, onsets_offsets, "Times", "RMS", "rms_graph_new")
+
+    normalized_rms, normalized_times = th_estimator._normalize_values()
+    show_and_save_graph(
+        normalized_times,
+        normalized_rms,
+        onsets_offsets,
+        "Times",
+        "RMS",
+        "rms_graph_new",
+    )
 
     pitch_change_detector = PitchChangeDetector(
         filtered_pitches, filtered_times, score_events
