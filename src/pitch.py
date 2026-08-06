@@ -363,7 +363,7 @@ class RmsThresholdEstimator:
             ),
             np.array(
                 [
-                    np.median(chunk)
+                    chunk.mean()
                     for chunk in np.array_split(
                         self.times,
                         np.arange(self.GROUP_SIZE, len(self.times), self.GROUP_SIZE),
