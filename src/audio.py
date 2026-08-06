@@ -35,3 +35,6 @@ class Audio:
 
         if self.msr_cnt <= 0:
             raise ValueError("Msr_cnt must be > 0")
+
+        if type(self.msr_cnt) is not int:
+            raise ValueError("Msr_cnt must be an int")
