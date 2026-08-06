@@ -4,6 +4,7 @@ from src.audio import *
 from src.pitch import *
 from src.xml_parsing import *
 from src.graphs import *
+from src.analyzer import *
 
 
 def main():

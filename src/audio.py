@@ -4,6 +4,11 @@ from pathlib import Path
 import librosa
 import numpy as np
 
+
+def hz_to_midi(pitches_hz: np.ndarray) -> np.ndarray:
+    return 69 + 12 * np.log2(pitches_hz / 440.0)
+
+
 @dataclass
 class Audio:
     path: str
@@ -27,6 +32,6 @@ class Audio:
 
         if self.time_signature[0] <= 0 or self.time_signature[1] <= 0:
             raise ValueError("Time signature must be at least (1/1) or more")
-        
+
         if self.msr_cnt <= 0:
             raise ValueError("Msr_cnt must be > 0")
