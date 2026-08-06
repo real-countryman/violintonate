@@ -6,6 +6,9 @@ import numpy as np
 
 
 def hz_to_midi(pitches_hz: np.ndarray) -> np.ndarray:
+    if np.any(pitches_hz <= 0):
+        raise ValueError("Hz values cant be zero or negative")
+
     return 69 + 12 * np.log2(pitches_hz / 440.0)
 
 
