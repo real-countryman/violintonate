@@ -36,7 +36,7 @@ run:
 	$(PYTHON_VENV) -m src.main $(ARGS)
 
 test: setup
-	$(PYTHON_VENV) tests/tests.py
+	$(PYTHON_VENV) -m tests.tests
 
 clean:
 	rm -rf $(VENV)

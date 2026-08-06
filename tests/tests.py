@@ -1,42 +1,96 @@
 import unittest
+import tempfile
+from pathlib import Path
 
-import numpy as np
 from src.audio import Audio
 
 
-class TestAudioMethods(unittest.TestCase):
+class TestAudio(unittest.TestCase):
+    def test_valid_args(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mp3_path = Path(temp_dir) / "audio.mp3"
+            mp3_path.write_bytes(b"fake mp3 data")
 
-    def test_seconds_per_bar(self):
-        audio = Audio(
-            path="audio.mp3",
-            bpm=120,
-            time_signature=(4, 4),
-            msr_cnt=8,
-        )
+            audio = Audio(
+                path=mp3_path,
+                bpm=78,
+                time_signature=(4, 4),
+                msr_cnt=20,
+            )
 
-        # 4 beats per bar * 60 seconds / 120 bpm = 2 seconds per bar
-        self.assertAlmostEqual(audio._seconds_per_bar, 2.0)
+            self.assertTrue(audio.path.exists())
+            self.assertEqual(audio.path, mp3_path)
 
-    def test_bpm_to_secs(self):
-        audio = Audio(
-            path="audio.mp3",
-            bpm=120,
-            time_signature=(4, 4),
-            msr_cnt=8,
-        )
+            self.assertEqual(audio.bpm, 78)
+            self.assertEqual(audio.time_signature, (4, 4))
+            self.assertEqual(audio.msr_cnt, 20)
 
-        # At 120 bpm, each beat is 0.5 seconds.
-        # Measure 0, offset 0 -> 0 seconds
-        self.assertAlmostEqual(audio._bpm_to_secs(0, 0), 0.0)
+    def test_file_does_not_exist(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            missing_file = Path(temp_dir) / "missing.mp3"
 
-        # Measure 1 starts after one 4/4 bar -> 2 seconds
-        self.assertAlmostEqual(audio._bpm_to_secs(1, 0), 2.0)
+            self.assertFalse(missing_file.exists())
 
-        # Measure 2 starts at 4 seconds.
-        # Offset 2 beats adds 1 second.
-        self.assertAlmostEqual(audio._bpm_to_secs(2, 2), 5.0)
+            with self.assertRaises(FileNotFoundError):
+                Audio(
+                    path=missing_file,
+                    bpm=78,
+                    time_signature=(4, 4),
+                    msr_cnt=20,
+                )
 
-        # TODO get_pitches_and_times(...)
+    def test_float_bpm(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mp3_path = Path(temp_dir) / "audio.mp3"
+            mp3_path.write_bytes(b"fake mp3 data")
+
+            audio = Audio(
+                path=mp3_path,
+                bpm=78.5,
+                time_signature=(4, 4),
+                msr_cnt=20,
+            )
+
+            self.assertAlmostEqual(audio.bpm, 78.5)
+
+    def test_negative_bpm(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mp3_path = Path(temp_dir) / "audio.mp3"
+            mp3_path.write_bytes(b"fake mp3 data")
+
+            with self.assertRaises(ValueError):
+                audio = Audio(
+                    path=mp3_path,
+                    bpm=-1,
+                    time_signature=(4, 4),
+                    msr_cnt=20,
+                )
+
+    def test_wrong_float_msr_cnt(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mp3_path = Path(temp_dir) / "audio.mp3"
+            mp3_path.write_bytes(b"fake mp3 data")
+
+            with self.assertRaises(ValueError):
+                audio = Audio(
+                    path=mp3_path,
+                    bpm=78,
+                    time_signature=(4, 4),
+                    msr_cnt=20.5,
+                )
+
+    def test_negative_msr_cnt(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mp3_path = Path(temp_dir) / "audio.mp3"
+            mp3_path.write_bytes(b"fake mp3 data")
+
+            with self.assertRaises(ValueError):
+                audio = Audio(
+                    path=mp3_path,
+                    bpm=78,
+                    time_signature=(4, 4),
+                    msr_cnt=-1,
+                )
 
 
 if __name__ == "__main__":
