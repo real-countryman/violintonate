@@ -52,12 +52,14 @@ class PitchExtractor:
     """
 
     audio: Audio
-    start_sec: float | None = None
-    end_sec: float | None = None
+    start_sec: float
+    end_sec: float
+
+    def __post_init__(self):
+        self._validate()
 
     def extract_pitches_and_times(
         self,
-        get_midi=True,
     ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray], np.ndarray, np.ndarray]:
         """
         Extracts pitches and their timestamps from the audio file.
@@ -92,13 +94,6 @@ class PitchExtractor:
                 Should be raised by _validate_measure_range if the selected
                 time range is invalid.
         """
-        if self.start_sec is None:
-            self.start_sec = 0
-
-        dur = None
-        if self.end_sec is None:
-            dur = self.end_sec - self.start_sec
-
         self._validate_measure_range()
 
         dur = self.end_sec - self.start_sec
@@ -122,9 +117,15 @@ class PitchExtractor:
 
         return (f0, voiced_flag, voiced_prob), rms, times
 
-    # TODO
-    def _validate_measure_range(self):
-        return
+    def _validate(self):
+        if self.start_sec < 0:
+            raise ValueError("Start_sec must be bigger than 0")
+
+        if self.end_sec < 0:
+            raise ValueError("End_sec must be bigger than 0")
+
+        if self.end_sec - self.start_sec <= 0:
+            raise ValueError("Duration cant be less or equal to 0")
 
     def _extract_f0(self, y, sr: int):
         """
