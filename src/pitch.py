@@ -313,6 +313,7 @@ class VoicedPitchFilter:
 
 
 # TODO think of modifiyng times and rms, maybe main should handle it?
+# TODO offsets too late
 @dataclass
 class RmsThresholdEstimator:
     rms: np.ndarray
@@ -425,8 +426,20 @@ class RmsThresholdEstimator:
     def _rightmost_local_minimum(self, y: np.ndarray):
         y = np.asarray(y)
 
+        # if values always decreasing
+        if y[-1] == min(y):
+            return len(y) - 1, y[-1]
+
+        # if values always increasing
+        if y[0] == min(y):
+            return 0, y[0]
+
         for i in range(len(y) - 2, 0, -1):
-            if y[i] < y[i - 1] and y[i] < y[i + 1]:
+            if (
+                y[i] <= y[i - 1]
+                and y[i] <= y[i + 1]
+                and (y[i] < y[i - 1] or y[i] < y[i + 1])  # [3,2,2,3] edge case
+            ):
                 return i, y[i]
 
         return None, None
@@ -434,8 +447,20 @@ class RmsThresholdEstimator:
     def _leftmost_local_minimum(self, y: np.ndarray):
         y = np.asarray(y)
 
+        # if values always decreasing
+        if y[-1] == min(y):
+            return len(y) - 1, y[-1]
+
+        # if values always increasing
+        if y[0] == min(y):
+            return 0, y[0]
+
         for i in range(1, len(y) - 1):
-            if y[i] < y[i - 1] and y[i] < y[i + 1]:
+            if (
+                y[i] <= y[i - 1]
+                and y[i] <= y[i + 1]
+                and (y[i] < y[i - 1] or y[i] < y[i + 1])  # [3,2,2,3] edge case
+            ):
                 return i, y[i]
 
         return None, None
