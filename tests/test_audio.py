@@ -1,8 +1,25 @@
 import unittest
 import tempfile
 from pathlib import Path
+import numpy as np
+from math import log2
 
-from src.audio import Audio
+from src.audio import *
+
+
+class TestHzToMidiMethod(unittest.TestCase):
+    def test_ok_values(self):
+        hz_values = np.array([20, 30, 40])
+        midi_values = hz_to_midi(hz_values)
+
+        for i in range(len(midi_values)):
+            self.assertAlmostEqual(midi_values[i], 69 + 12 * log2(hz_values[i] / 440.0))
+
+    def test_wrong_values(self):
+        hz_values = np.array([20, 0, -10])
+
+        with self.assertRaises(ValueError):
+            hz_to_midi(hz_values)
 
 
 class TestAudio(unittest.TestCase):
