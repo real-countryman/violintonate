@@ -34,10 +34,6 @@ def main():
     score_events = time_mapper.crop_score_events(score_events)
     score_events = time_mapper.score_events_add_times(score_events)
 
-    score_event_start_sec, score_event_end_sec = (
-        time_mapper.get_seconds_start_end_score_events()
-    )
-
     audio_start_sec, audio_end_sec = (
         time_mapper.get_seconds_start_end_audio_with_count_in()
     )
@@ -46,38 +42,21 @@ def main():
         audio, audio_start_sec, audio_end_sec
     ).extract_pitches_and_times()
 
-    msr_time_secs = time_mapper.get_seconds_per_bar()
-
     pitch_filter = VoicedPitchFilter(
-        f0, voiced_flags, voiced_probs, times, rms, msr_time_secs=msr_time_secs
+        f0,
+        voiced_flags,
+        voiced_probs,
+        times,
+        rms,
     )
 
     filtered_pitches, filtered_times = pitch_filter.filter_frames()
-
     filtered_pitches = hz_to_midi(filtered_pitches)
-
-    intonation_analyzer = IntonationAnalyzer(
-        filtered_pitches, filtered_times, score_events
-    )
-
-    """
-    bad_frames = intonation_analyzer.get_bad_frames()
-
-    for pitch, pitch_time, cent_deviation in bad_frames:
-        print(
-            f"pitch: {pitch}, pitch_time: {pitch_time}, cent_deviation: {cent_deviation}"
-        )
-    
-    """
 
     th_estimator = RmsThresholdEstimator(rms, times, score_events)
     th_estimator.add_rms_offsets_onsets()
 
     onsets_offsets = th_estimator.get_rms_idxs_vals()
-    """
-    for val in onsets_offsets:
-        print(val)
-    """
 
     normalized_rms, normalized_times = th_estimator._normalize_values()
     show_and_save_graph(

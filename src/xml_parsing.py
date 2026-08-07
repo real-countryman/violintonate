@@ -185,8 +185,12 @@ class ScoreTimeMapper:
         if self.bpm <= 0:
             raise ValueError("Bpm must be bigger than 0")
 
-        if type(self.time_signature) != tuple[int, int]:
-            raise ValueError("Time signature must be of type tuple[int, int]")
+        if (
+            not isinstance(self.time_signature, tuple)
+            or len(self.time_signature) != 2
+            or not all(isinstance(x, int) for x in self.time_signature)
+        ):
+            raise ValueError("Time signature must be tuple[int, int]")
 
         if self.time_signature[0] <= 0 or self.time_signature[1] <= 0:
             raise ValueError("Time signature can't contain zero or negative value")
