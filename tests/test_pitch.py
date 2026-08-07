@@ -52,3 +52,22 @@ class TestPitchExtractor:
                 start_sec=2,
                 end_sec=1,
             )
+
+
+class TestVoicedPitchFilter:
+    def test_validate_ok(self):
+        f0 = np.array([78.9, 90.3, 111.1])
+        voiced_flags = np.array([True, False, True])
+        voiced_probs = np.array([0.8, 0.3, 0.9])
+        times = np.array([1, 1.2, 1.4])
+        rms = np.array([50, 70, 50])
+        msr_time_secs = 0.3
+
+        pitch_filter = VoicedPitchFilter(
+            f0=f0,
+            voiced_flags=voiced_flags,
+            voiced_probs=voiced_probs,
+            times=times,
+            rms=rms,
+            msr_time_secs=msr_time_secs,
+        )
