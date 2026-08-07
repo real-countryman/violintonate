@@ -71,3 +71,73 @@ class TestVoicedPitchFilter:
             rms=rms,
             msr_time_secs=msr_time_secs,
         )
+
+    def test_validate_arr_not_same_len(self):
+        f0 = np.array([90.3, 111.1])
+        voiced_flags = np.array([True, False, True])
+        voiced_probs = np.array([0.8, 0.3, 0.9])
+        times = np.array([1, 1.2, 1.4])
+        rms = np.array([50, 70, 50])
+        msr_time_secs = 0.3
+
+        with pytest.raises(ValueError):
+            pitch_filter = VoicedPitchFilter(
+                f0=f0,
+                voiced_flags=voiced_flags,
+                voiced_probs=voiced_probs,
+                times=times,
+                rms=rms,
+                msr_time_secs=msr_time_secs,
+            )
+
+        f0 = np.array([1, 2, 3])
+        voiced_flags = np.array([True, False])
+
+        with pytest.raises(ValueError):
+            pitch_filter = VoicedPitchFilter(
+                f0=f0,
+                voiced_flags=voiced_flags,
+                voiced_probs=voiced_probs,
+                times=times,
+                rms=rms,
+                msr_time_secs=msr_time_secs,
+            )
+
+        voiced_flags = np.array([True, False, True])
+        voiced_probs = np.array([0.8, 0.3])
+
+        with pytest.raises(ValueError):
+            pitch_filter = VoicedPitchFilter(
+                f0=f0,
+                voiced_flags=voiced_flags,
+                voiced_probs=voiced_probs,
+                times=times,
+                rms=rms,
+                msr_time_secs=msr_time_secs,
+            )
+
+        voiced_probs = np.array([0.8, 0.3, 0.9])
+        times = np.array([1, 2])
+
+        with pytest.raises(ValueError):
+            pitch_filter = VoicedPitchFilter(
+                f0=f0,
+                voiced_flags=voiced_flags,
+                voiced_probs=voiced_probs,
+                times=times,
+                rms=rms,
+                msr_time_secs=msr_time_secs,
+            )
+
+        times = np.array([1, 2, 3])
+        rms = np.array([50, 70])
+
+        with pytest.raises(ValueError):
+            pitch_filter = VoicedPitchFilter(
+                f0=f0,
+                voiced_flags=voiced_flags,
+                voiced_probs=voiced_probs,
+                times=times,
+                rms=rms,
+                msr_time_secs=msr_time_secs,
+            )
