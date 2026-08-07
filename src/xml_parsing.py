@@ -88,6 +88,9 @@ class ScoreTimeMapper:
     end_msr: int
     end_offset: float
 
+    def __post_init__(self):
+        self._validate()
+
     def get_seconds_start_end_score_events(self) -> tuple[float, float]:
         start_ql, end_ql = self.get_start_end_in_quarter_lengths()
 
@@ -179,7 +182,29 @@ class ScoreTimeMapper:
 
     # TODO
     def _validate(self):
-        return
+        if self.bpm <= 0:
+            raise ValueError("Bpm must be bigger than 0")
+
+        if type(self.time_signature) != tuple[int, int]:
+            raise ValueError("Time signature must be of type tuple[int, int]")
+
+        if self.time_signature[0] <= 0 or self.time_signature[1] <= 0:
+            raise ValueError("Time signature can't contain zero or negative value")
+
+        if self.start_msr < 0:
+            raise ValueError("Start measure can't be negative")
+
+        if self.start_offset < 0:
+            raise ValueError("Start offset can't be negative")
+
+        if self.end_msr < 0:
+            raise ValueError("End measure can't be negative")
+
+        if self.end_offset < 0:
+            raise ValueError("End offset can't be negative")
+
+        # TODO offset bigger than measure beat length
+        # TODO end + offset > start + offset
 
 
 @dataclass
