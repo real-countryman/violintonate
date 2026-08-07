@@ -186,7 +186,7 @@ class PitchChangeDetector:
 
     def add_tone_transitions_frequencies(self) -> None:
         for cur_event, next_event in zip(self.score_events, self.score_events[1:]):
-            cur_event["tone_transition"] = {
+            cur_event["pitch"] = {
                 "cur_pitch": None,
                 "next_pitch": None,
             }
@@ -212,12 +212,12 @@ class PitchChangeDetector:
                 left_values, right_values
             )
 
-            cur_event["tone_transition"] = {
+            cur_event["pitch"] = {
                 "cur_pitch": cur_pitch,
                 "next_pitch": next_pitch,
             }
 
-        self.score_events[-1]["tone_transition"] = {
+        self.score_events[-1]["pitch"] = {
             "cur_pitch": None,
             "next_pitch": None,
         }
@@ -228,9 +228,9 @@ class PitchChangeDetector:
                 self.pitch_times, float(event["end_sec"])
             )
 
-            next_pitch = event["tone_transition"]["next_pitch"]
+            next_pitch = event["pitch"]["next_pitch"]
             if next_pitch is None:
-                event["tone_transition"]["transition_time"] = None
+                event["pitch"]["transition_time"] = None
                 continue
 
             idx_shift = 0
@@ -244,14 +244,14 @@ class PitchChangeDetector:
                     and abs(pitch_2 - next_pitch) < self.SAME_PITCH_MIDI_TOLERANCE
                     and abs(pitch_3 - next_pitch) < self.SAME_PITCH_MIDI_TOLERANCE
                 ):
-                    event["tone_transition"]["transition_time"] = self.pitch_times[
+                    event["pitch"]["transition_time"] = self.pitch_times[
                         left_idx + idx_shift
                     ]
                     break
                 else:
                     idx_shift += 1
 
-        self.score_events[-1]["tone_transition"]["transition_time"] = None
+        self.score_events[-1]["pitch"]["transition_time"] = None
 
     def _get_rolling_medians_cur_next_values(self, left_values, right_values):
         lv = pd.Series(left_values)
