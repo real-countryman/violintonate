@@ -170,7 +170,6 @@ class VoicedPitchFilter:
     voiced_probs: np.ndarray
     times: np.ndarray
     rms: np.ndarray
-    msr_time_secs: float
 
     # May need tweaking
     VOICED_PROB_THRESHOLD = 0.8

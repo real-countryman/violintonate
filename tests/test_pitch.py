@@ -61,7 +61,6 @@ class TestVoicedPitchFilter:
         voiced_probs = np.array([0.8, 0.3, 0.9])
         times = np.array([1, 1.2, 1.4])
         rms = np.array([50, 70, 50])
-        msr_time_secs = 0.3
 
         pitch_filter = VoicedPitchFilter(
             f0=f0,
@@ -69,7 +68,6 @@ class TestVoicedPitchFilter:
             voiced_probs=voiced_probs,
             times=times,
             rms=rms,
-            msr_time_secs=msr_time_secs,
         )
 
     def test_validate_arr_not_same_len(self):
@@ -78,7 +76,6 @@ class TestVoicedPitchFilter:
         voiced_probs = np.array([0.8, 0.3, 0.9])
         times = np.array([1, 1.2, 1.4])
         rms = np.array([50, 70, 50])
-        msr_time_secs = 0.3
 
         with pytest.raises(ValueError):
             pitch_filter = VoicedPitchFilter(
@@ -87,7 +84,6 @@ class TestVoicedPitchFilter:
                 voiced_probs=voiced_probs,
                 times=times,
                 rms=rms,
-                msr_time_secs=msr_time_secs,
             )
 
         f0 = np.array([1, 2, 3])
@@ -100,7 +96,6 @@ class TestVoicedPitchFilter:
                 voiced_probs=voiced_probs,
                 times=times,
                 rms=rms,
-                msr_time_secs=msr_time_secs,
             )
 
         voiced_flags = np.array([True, False, True])
@@ -113,7 +108,6 @@ class TestVoicedPitchFilter:
                 voiced_probs=voiced_probs,
                 times=times,
                 rms=rms,
-                msr_time_secs=msr_time_secs,
             )
 
         voiced_probs = np.array([0.8, 0.3, 0.9])
@@ -126,7 +120,6 @@ class TestVoicedPitchFilter:
                 voiced_probs=voiced_probs,
                 times=times,
                 rms=rms,
-                msr_time_secs=msr_time_secs,
             )
 
         times = np.array([1, 2, 3])
@@ -139,5 +132,4 @@ class TestVoicedPitchFilter:
                 voiced_probs=voiced_probs,
                 times=times,
                 rms=rms,
-                msr_time_secs=msr_time_secs,
             )
