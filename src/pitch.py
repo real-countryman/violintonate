@@ -175,6 +175,9 @@ class VoicedPitchFilter:
     # May need tweaking
     VOICED_PROB_THRESHOLD = 0.8
 
+    def __post_init__(self):
+        self._validate()
+
     def filter_frames(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Removes unreliable pitch frames.
@@ -206,4 +209,11 @@ class VoicedPitchFilter:
 
         return pitches, pitch_times
 
-    def _validate(self): ...
+    def _validate(self):
+        if (
+            self.f0.size != self.voiced_flags.size
+            or self.voiced_flags.size != self.voiced_probs.size
+            or self.voiced_probs.size != self.times.size
+            or self.times.size != self.rms.size
+        ):
+            raise ValueError("Arrays must be the same lenghts")
