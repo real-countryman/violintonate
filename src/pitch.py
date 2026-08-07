@@ -3,8 +3,6 @@ from pathlib import Path
 
 import librosa
 import numpy as np
-import pandas as pd
-from bisect import bisect_left
 
 from src.audio import Audio
 
@@ -94,7 +92,6 @@ class PitchExtractor:
                 Should be raised by _validate_measure_range if the selected
                 time range is invalid.
         """
-        self._validate_measure_range()
 
         dur = self.end_sec - self.start_sec
 
@@ -177,10 +174,6 @@ class VoicedPitchFilter:
 
     # May need tweaking
     VOICED_PROB_THRESHOLD = 0.8
-    RMS_THRESHOLD = -1
-
-    def __post_init__(self):
-        self._set_rms_db_threshold()
 
     def filter_frames(self) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -203,7 +196,6 @@ class VoicedPitchFilter:
             (self.voiced_flags == True)
             & ~np.isnan(self.f0)
             & (self.voiced_probs > self.VOICED_PROB_THRESHOLD)
-            & (self.rms > self.RMS_THRESHOLD)
         )
 
         times_clean = self.times[mask]
@@ -214,19 +206,4 @@ class VoicedPitchFilter:
 
         return pitches, pitch_times
 
-    def _set_rms_db_threshold(self):
-        """
-        Sets RMS_THRESHOLD based on the average RMS value
-        during the first measure, which is assumed to be quiet/count-in.
-        """
-
-        first_measure_end_idx = np.searchsorted(self.times, self.msr_time_secs)
-
-        quiet_rms = self.rms[:first_measure_end_idx]
-
-        if quiet_rms.size == 0:
-            raise ValueError("No RMS frames found in the first measure.")
-
-        quiet_avg_db = np.average(quiet_rms)
-
-        self.RMS_THRESHOLD = 2 * quiet_avg_db
+    def _validate(self): ...
