@@ -364,30 +364,13 @@ class RhythmAnalyzer:
     def __post_init__(self):
         self._validate()
 
+    # TODO rozhrania, kde je "kind": "rest"
     def add_rhythm_onset_offset_diffs(self):
+        self._update_dictionary()
+
         for cur_event, next_event in zip(self.score_events, self.score_events[1:]):
-            cur_event.setdefault("rhythm", {}).update(
-                {
-                    "onset_diff_secs": None,
-                    "offset_diff_secs": None,
-                }
-            )
-
-            next_event.setdefault("rhythm", {}).update(
-                {
-                    "onset_diff_secs": None,
-                    "offset_diff_secs": None,
-                }
-            )
-
-            print("There I choked:")
-            print(cur_event)
-            print("-----------------------------")
             # if there is pitch transition, compute by frequency change
             if cur_event["pitch"]["transition_time"] != None:
-                print("I AM ALIVE!")
-                print(cur_event)
-                print("--------------------------------------")
                 cur_event["rhythm"]["offset_diff_secs"] = (
                     cur_event["pitch"]["transition_time"] - cur_event["end_sec"]
                 )
@@ -406,5 +389,14 @@ class RhythmAnalyzer:
                     next_event["rhythm"]["rms_onset_time"] = (
                         next_event["rms"]["rms_onset_time"] - next_event["start_sec"]
                     )
+
+    def _update_score_events(self):
+        for event in self.score_events:
+            event.setdefault("rhythm", {}).update(
+                {
+                    "onset_diff_secs": None,
+                    "offset_diff_secs": None,
+                }
+            )
 
     def _validate(self): ...
