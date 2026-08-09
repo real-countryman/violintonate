@@ -355,3 +355,56 @@ class IntonationAnalyzer:
                 return event
 
         return None
+
+
+@dataclass
+class RhythmAnalyzer:
+    score_events: list[dict]
+
+    def __post_init__(self):
+        self._validate()
+
+    def add_rhythm_onset_offset_diffs(self):
+        for cur_event, next_event in zip(self.score_events, self.score_events[1:]):
+            cur_event.setdefault("rhythm", {}).update(
+                {
+                    "onset_diff_secs": None,
+                    "offset_diff_secs": None,
+                }
+            )
+
+            next_event.setdefault("rhythm", {}).update(
+                {
+                    "onset_diff_secs": None,
+                    "offset_diff_secs": None,
+                }
+            )
+
+            print("There I choked:")
+            print(cur_event)
+            print("-----------------------------")
+            # if there is pitch transition, compute by frequency change
+            if cur_event["pitch"]["transition_time"] != None:
+                print("I AM ALIVE!")
+                print(cur_event)
+                print("--------------------------------------")
+                cur_event["rhythm"]["offset_diff_secs"] = (
+                    cur_event["pitch"]["transition_time"] - cur_event["end_sec"]
+                )
+                next_event["rhythm"]["onset_diff_secs"] = (
+                    cur_event["pitch"]["transition_time"] - next_event["start_sec"]
+                )
+
+            # else compute by rms
+            else:
+                if cur_event["rms"]["rms_offset_time"] != None:
+                    cur_event["rhythm"]["offset_diff_secs"] = (
+                        cur_event["rms"]["rms_offset_time"] - cur_event["end_sec"]
+                    )
+
+                if next_event["rms"]["rms_onset_time"] != None:
+                    next_event["rhythm"]["rms_onset_time"] = (
+                        next_event["rms"]["rms_onset_time"] - next_event["start_sec"]
+                    )
+
+    def _validate(self): ...

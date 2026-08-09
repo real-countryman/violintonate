@@ -59,6 +59,8 @@ def main():
     onsets_offsets = th_estimator.get_rms_idxs_vals()
 
     normalized_rms, normalized_times = th_estimator._normalize_values()
+
+    """
     show_and_save_graph(
         normalized_times,
         normalized_rms,
@@ -67,6 +69,7 @@ def main():
         "RMS",
         "rms_graph_new",
     )
+    """
 
     pitch_change_detector = PitchChangeDetector(
         filtered_pitches, filtered_times, score_events
@@ -74,6 +77,9 @@ def main():
 
     pitch_change_detector.add_tone_transitions_frequencies()
     pitch_change_detector.add_tone_transition_times()
+
+    rhythm_analyzer = RhythmAnalyzer(score_events)
+    rhythm_analyzer.add_rhythm_onset_offset_diffs()
 
     for event in score_events:
         print(event)
