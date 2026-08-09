@@ -222,6 +222,10 @@ class PitchChangeDetector:
             "next_pitch": None,
         }
 
+        # TODO last note
+        if self.score_events[-1]["kind"] == "note":
+            ...
+
     def add_tone_transition_times(self) -> None:
         for event in self.score_events[: len(self.score_events) - 1]:
             left_idx, right_idx = get_start_end_time_idx(
@@ -366,7 +370,14 @@ class RhythmAnalyzer:
 
     # TODO rozhrania, kde je "kind": "rest"
     def add_rhythm_onset_offset_diffs(self):
-        self._update_dictionary()
+        self._update_score_events()
+
+        first_event = self.score_events[0]
+        # compute by rms offset
+        if first_event["rms"]["rms_onset_time"] != None:
+            first_event["rhythm"]["onset_diff_secs"] = (
+                first_event["rms"]["rms_onset_time"] - first_event["start_sec"]
+            )
 
         for cur_event, next_event in zip(self.score_events, self.score_events[1:]):
             # if there is pitch transition, compute by frequency change
@@ -386,7 +397,7 @@ class RhythmAnalyzer:
                     )
 
                 if next_event["rms"]["rms_onset_time"] != None:
-                    next_event["rhythm"]["rms_onset_time"] = (
+                    next_event["rhythm"]["onset_diff_secs"] = (
                         next_event["rms"]["rms_onset_time"] - next_event["start_sec"]
                     )
 
