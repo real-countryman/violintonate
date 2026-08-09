@@ -223,7 +223,7 @@ class PitchChangeDetector:
         }
 
     def add_tone_transition_times(self) -> None:
-        for event in self.score_events[: len(self.score_events) - 2]:
+        for event in self.score_events[: len(self.score_events) - 1]:
             left_idx, right_idx = get_start_end_time_idx(
                 self.pitch_times, float(event["end_sec"])
             )
