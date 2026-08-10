@@ -79,7 +79,7 @@ def main():
     pitch_change_detector.add_tone_transition_times()
 
     rhythm_analyzer = RhythmAnalyzer(score_events)
-    rhythm_analyzer.add_rhythm_onset_offset_diffs()
+    rhythm_analyzer.add_rhythm_onset_offset_diffs_and_flags()
 
     for event in score_events:
         print(event)

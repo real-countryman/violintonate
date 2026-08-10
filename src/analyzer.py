@@ -365,10 +365,14 @@ class IntonationAnalyzer:
 class RhythmAnalyzer:
     score_events: list[dict]
 
+    # TODO may need tweaking
+    ONSET_TOLERANCE_BEATS = 0.10
+    OFFSET_TOLERANCE_BEATS = 0.10
+
     def __post_init__(self):
         self._validate()
 
-    def add_rhythm_onset_offset_diffs(self):
+    def add_rhythm_onset_offset_diffs_and_flags(self):
         self._update_score_events()
 
         first_event = self.score_events[0]
@@ -400,6 +404,8 @@ class RhythmAnalyzer:
                         next_event["rms"]["rms_onset_time"] - next_event["start_sec"]
                     )
 
+            self._set_onset_offset_flags(cur_event)
+
         last_event = self.score_events[-1]
 
         # if there is no pitch transition from previous event,
@@ -416,12 +422,40 @@ class RhythmAnalyzer:
                 last_event["rms"]["rms_offset_time"] - last_event["end_sec"]
             )
 
+        self._set_onset_offset_flags(last_event)
+
+    def _set_onset_offset_flags(self, event):
+        # set onset flag
+        if event["rhythm"]["onset_diff_secs"] != None:
+            if abs(event["rhythm"]["onset_diff_secs"]) < self.ONSET_TOLERANCE_BEATS:
+                event["rhythm"]["onset_diff_flag"] = "perfect"
+            elif (
+                abs(event["rhythm"]["onset_diff_secs"]) < 2 * self.ONSET_TOLERANCE_BEATS
+            ):
+                event["rhythm"]["onset_diff_flag"] = "okay"
+            else:
+                event["rhythm"]["onset_diff_flag"] = "wrong"
+
+        # set offset flag
+        if abs(event["rhythm"]["offset_diff_secs"]) != None:
+            if abs(event["rhythm"]["offset_diff_secs"]) < self.OFFSET_TOLERANCE_BEATS:
+                event["rhythm"]["offset_diff_flag"] = "perfect"
+            elif (
+                abs(event["rhythm"]["offset_diff_secs"])
+                < 2 * self.OFFSET_TOLERANCE_BEATS
+            ):
+                event["rhythm"]["offset_diff_flag"] = "okay"
+            else:
+                event["rhythm"]["offset_diff_flag"] = "wrong"
+
     def _update_score_events(self):
         for event in self.score_events:
             event.setdefault("rhythm", {}).update(
                 {
                     "onset_diff_secs": None,
                     "offset_diff_secs": None,
+                    "onset_diff_flag": None,
+                    "offset_diff_flag": None,
                 }
             )
 
