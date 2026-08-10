@@ -6,9 +6,6 @@ import numpy as np
 
 from src.audio import Audio
 
-FRAME_LENGTH = 2048
-HOP_LENGTH = 256
-
 
 # TODO look into resolution parameter in librosa.pyin() function
 @dataclass
@@ -52,6 +49,9 @@ class PitchExtractor:
     audio: Audio
     start_sec: float
     end_sec: float
+
+    FRAME_LENGTH = 2048
+    HOP_LENGTH = 256
 
     def __post_init__(self):
         self._validate()
@@ -105,11 +105,13 @@ class PitchExtractor:
         f0, voiced_flag, voiced_prob = self._extract_f0(y, sr)
 
         # Time axis for each pitch estimate
-        times = librosa.times_like(f0, sr=sr, hop_length=HOP_LENGTH) + self.start_sec
+        times = (
+            librosa.times_like(f0, sr=sr, hop_length=self.HOP_LENGTH) + self.start_sec
+        )
 
         # Compute rms
         rms = librosa.feature.rms(
-            y=y, frame_length=FRAME_LENGTH, hop_length=HOP_LENGTH
+            y=y, frame_length=self.FRAME_LENGTH, hop_length=self.HOP_LENGTH
         )[0]
 
         return (f0, voiced_flag, voiced_prob), rms, times
@@ -156,8 +158,8 @@ class PitchExtractor:
             fmin=librosa.note_to_hz("G3"),
             fmax=librosa.note_to_hz("E7"),
             sr=sr,
-            frame_length=FRAME_LENGTH,
-            hop_length=HOP_LENGTH,
+            frame_length=self.FRAME_LENGTH,
+            hop_length=self.HOP_LENGTH,
         )
 
         return f0, voiced_flag, voiced_prob
