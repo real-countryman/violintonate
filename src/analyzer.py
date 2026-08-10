@@ -1,6 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 import pandas as pd
+from bisect import bisect_left
 
 NOTE_BOUNDARY_SEARCH_RADIUS_SEC = 0.15
 
@@ -299,66 +300,65 @@ class PitchChangeDetector:
 
 @dataclass
 class IntonationAnalyzer:
-    # TODO intonation_tolerance_th (in cents)
     pitches: np.ndarray
     pitch_times: np.ndarray
-    # TODO make it an argument not a property
     score_events: list[dict]
 
     # 1 semitone = 100 cents, may need tweaking
-    INTONATION_TOLERANCE_CENTS = 10.0
+    INTONATION_TOLERANCE_MIDI = 0.10
 
-    def get_intonation(self) -> list[tuple[float, float, float | None]]:
-        result = []
+    def __post_init__(self):
+        self._update_score_events()
 
-        for pitch, pitch_time in zip(self.pitches, self.pitch_times):
-            cent_deviation = self._compare_pitch_with_score_event(
-                float(pitch),
-                float(pitch_time),
-            )
-            result.append((float(pitch), float(pitch_time), cent_deviation))
-
-        return result
-
-    def get_bad_frames(self) -> list[tuple[float, float]]:
-        analyzed_frames = self.get_intonation()
-
-        return [
-            (pitch_time, pitch, cent_deviation)
-            for pitch_time, pitch, cent_deviation in analyzed_frames
-            if cent_deviation is not None
-            and abs(cent_deviation) > self.INTONATION_TOLERANCE_CENTS
-        ]
-
-    def _compare_pitch_with_score_event(
-        self,
-        pitch: float,
-        pitch_time: float,
-    ) -> float | None:
-        score_event = self._find_score_event_at_time(pitch_time)
-
-        if score_event is None:
-            return False
-
-        expected_midi = score_event["midi"]
-        expected_midi_value = float(expected_midi[0])
-
-        cents_error = (pitch - expected_midi_value) * 100.0
-
-        return cents_error
-
-    def _find_score_event_at_time(
-        self,
-        pitch_time: float,
-    ) -> dict | None:
+    def add_intonation(self) -> None:
         for event in self.score_events:
             if event["kind"] != "note":
                 continue
 
-            if event["start_sec"] <= pitch_time < event["end_sec"]:
-                return event
+            real_start_sec = event["start_sec"] + event["rhythm"]["onset_diff_secs"]
+            real_end_sec = event["end_sec"] + event["rhythm"]["offset_diff_secs"]
 
-        return None
+            start_idx, end_idx = self._get_start_end_idx_at_times(
+                real_start_sec, real_end_sec
+            )
+
+            expected_pitch = event["midi"][0]
+            for pitch, pitch_time in zip(
+                self.pitches[start_idx:end_idx], self.pitch_times[start_idx:end_idx]
+            ):
+                event["intonation"]["pitch_diff"].append(
+                    float(float(pitch) - float(expected_pitch))
+                )
+
+                event["intonation"]["pitch_time"].append(float(pitch_time))
+
+                flag = self._get_intonation_flag(float(pitch), float(expected_pitch))
+                event["intonation"]["pitch_flag"].append(flag)
+
+    def _get_start_end_idx_at_times(
+        self, start_sec: float, end_sec: float
+    ) -> tuple[int, int]:
+        return bisect_left(self.pitch_times, start_sec), bisect_left(
+            self.pitch_times, end_sec
+        )
+
+    def _get_intonation_flag(self, pitch: float, expected_pitch: float) -> str:
+        if abs(pitch - expected_pitch) < self.INTONATION_TOLERANCE_MIDI:
+            return "perfect"
+        elif abs(pitch - expected_pitch) < 2 * self.INTONATION_TOLERANCE_MIDI:
+            return "okay"
+        else:
+            return "wrong"
+
+    def _update_score_events(self) -> None:
+        for event in self.score_events:
+            event.setdefault("intonation", {}).update(
+                {
+                    "pitch_diff": [],
+                    "pitch_time": [],
+                    "pitch_flag": [],
+                }
+            )
 
 
 @dataclass

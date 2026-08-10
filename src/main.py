@@ -81,6 +81,14 @@ def main():
     rhythm_analyzer = RhythmAnalyzer(score_events)
     rhythm_analyzer.add_rhythm_onset_offset_diffs_and_flags()
 
+    intonation_analyzer = IntonationAnalyzer(
+        filtered_pitches,
+        filtered_times,
+        score_events,
+    )
+
+    intonation_analyzer.add_intonation()
+
     for event in score_events:
         print(event)
 
