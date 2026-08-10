@@ -368,7 +368,6 @@ class RhythmAnalyzer:
     def __post_init__(self):
         self._validate()
 
-    # TODO rozhrania, kde je "kind": "rest"
     def add_rhythm_onset_offset_diffs(self):
         self._update_score_events()
 
