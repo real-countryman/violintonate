@@ -52,6 +52,7 @@ class PitchExtractor:
 
     FRAME_LENGTH = 2048
     HOP_LENGTH = 256
+    RESOLUTION = 0.05
 
     def __post_init__(self):
         self._validate()
@@ -160,6 +161,7 @@ class PitchExtractor:
             sr=sr,
             frame_length=self.FRAME_LENGTH,
             hop_length=self.HOP_LENGTH,
+            resolution=self.RESOLUTION,
         )
 
         return f0, voiced_flag, voiced_prob
