@@ -401,6 +401,22 @@ class RhythmAnalyzer:
                         next_event["rms"]["rms_onset_time"] - next_event["start_sec"]
                     )
 
+        last_event = self.score_events[-1]
+
+        # if there is no pitch transition from previous event,
+        if last_event["rhythm"]["onset_diff_secs"] == None:
+            # compute by rms
+            if last_event["rms"]["rms_onset_time"] != None:
+                last_event["rhythm"]["onset_diff_secs"] = (
+                    last_event["rms"]["rms_onset_time"] - last_event["start_sec"]
+                )
+
+        # compute last offset by rms:
+        if last_event["rms"]["rms_offset_time"] != None:
+            last_event["rhythm"]["offset_diff_secs"] = (
+                last_event["rms"]["rms_offset_time"] - last_event["end_sec"]
+            )
+
     def _update_score_events(self):
         for event in self.score_events:
             event.setdefault("rhythm", {}).update(
