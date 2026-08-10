@@ -17,7 +17,7 @@ def main():
         print("Usage: python3 main.py <audio_file>")
         return
 
-    audio = Audio(argv[1], 78.0, (4, 4), 96)
+    audio = Audio(argv[1], 78.0, (4, 4))
 
     xml_file = MusicxmlParser("./input/xml_files/Quantum Occasu.xml", part_idx=0)
     score_events = xml_file.extract_score_events()
