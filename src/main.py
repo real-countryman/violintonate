@@ -35,7 +35,7 @@ def main():
     score_events = time_mapper.score_events_add_times(score_events)
 
     audio_start_sec, audio_end_sec = (
-        time_mapper.get_seconds_start_end_audio_with_count_in()
+        time_mapper.get_audio_bounds_with_count_in_and_end_padding()
     )
 
     (f0, voiced_flags, voiced_probs), rms, times = PitchExtractor(

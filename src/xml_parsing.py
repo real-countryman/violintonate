@@ -101,14 +101,16 @@ class ScoreTimeMapper:
 
         return start_sec, end_sec
 
-    def get_seconds_start_end_audio_with_count_in(self) -> tuple[float, float]:
+    def get_audio_bounds_with_count_in_and_end_padding(self) -> tuple[float, float]:
         start_score_sec, end_sec = self.get_seconds_start_end_score_events()
         start_sec = start_score_sec - self.get_seconds_per_bar()
 
         if start_sec < 0:
             raise ValueError("Count in is too short!")
 
-        return start_sec, end_sec
+        one_beat = self.get_seconds_per_bar() / self.time_signature[0]
+
+        return start_sec, end_sec + one_beat
 
     def get_start_end_in_quarter_lengths(self) -> tuple[float, float]:
         start = self._measure_offset_to_quarter_length(
