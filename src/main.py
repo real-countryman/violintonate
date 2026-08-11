@@ -1,34 +1,31 @@
-import sys
-
 from src.audio import *
 from src.pitch import *
 from src.xml_parsing import *
 from src.graphs import *
 from src.analyzer import *
+from src.parser import *
 
 
 def main():
-    argc = len(sys.argv)
-    argv = sys.argv
+    args = parse_args()
 
     np.set_printoptions(threshold=np.inf)
 
-    if argc != 2:
-        print("Usage: python3 main.py <audio_file>")
-        return
+    audio = Audio(args.audio, args.bpm, tuple(args.time_signature))
 
-    audio = Audio(argv[1], 78.0, (4, 4))
-
-    xml_file = MusicxmlParser("./input/xml_files/Quantum Occasu.xml", part_idx=0)
+    xml_file = MusicxmlParser(args.musicxml, part_idx=0)
     score_events = xml_file.extract_score_events()
+
+    start_msr = args.start_msr - 1  # one based idx -> zero based idx
+    end_msr = args.end_msr - 1  # one based idx -> zero based idx
 
     time_mapper = ScoreTimeMapper(
         audio.bpm,
         audio.time_signature,
-        start_msr=9,
-        start_offset=0,
-        end_msr=17,
-        end_offset=3.0,
+        start_msr=start_msr,
+        start_offset=args.start_offset,
+        end_msr=end_msr,
+        end_offset=args.end_offset,
     )
 
     score_events = time_mapper.crop_score_events(score_events)
@@ -56,11 +53,11 @@ def main():
     th_estimator = RmsThresholdEstimator(rms, times, score_events)
     th_estimator.add_rms_offsets_onsets()
 
+    """
     onsets_offsets = th_estimator.get_rms_idxs_vals()
 
     normalized_rms, normalized_times = th_estimator._normalize_values()
 
-    """
     show_and_save_graph(
         normalized_times,
         normalized_rms,
