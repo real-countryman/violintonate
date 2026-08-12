@@ -2,6 +2,7 @@ import numpy as np
 from dataclasses import dataclass
 import pandas as pd
 from bisect import bisect_left
+from statistics import mean
 
 NOTE_BOUNDARY_SEARCH_RADIUS_SEC = 0.15
 
@@ -382,7 +383,19 @@ class IntonationAnalyzer:
                 event["intonation"][section]["okay_ratio"] = okay_cnt / sum_cnt
                 event["intonation"][section]["wrong_ratio"] = wrong_cnt / sum_cnt
 
-    def _set_tendency_flag(self, event: dict) -> None: ...
+    def _set_tendency_flag(self, event: dict) -> None:
+        for section in ["start", "middle", "end"]:
+            event_section = event["intonation"][section]
+
+            if event_section["wrong_ratio"] >= 0.25:
+                event_section["overall_flag"] = "wrong"
+            elif (
+                event_section["perfect_ratio"] >= 0.75
+                and event_section["wrong_ratio"] <= 0.05
+            ):
+                event_section["overall_flag"] = "perfect"
+            else:
+                event_section["overall_flag"] = "okay"
 
     def _set_overall_flag(self, event: dict) -> None: ...
 
