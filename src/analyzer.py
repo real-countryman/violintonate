@@ -411,7 +411,7 @@ class IntonationAnalyzer:
         duration = end_sec - start_sec
 
         start_time_bound = start_sec + duration * self.START_SECTION_END_RATIO
-        end_time_bound = end_sec + duration * self.END_SECTION_START_RATIO
+        end_time_bound = start_sec + duration * self.END_SECTION_START_RATIO
 
         return (
             bisect_left(self.pitch_times, start_time_bound),
