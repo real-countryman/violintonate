@@ -306,6 +306,8 @@ class IntonationAnalyzer:
 
     # 1 semitone = 100 cents, may need tweaking
     INTONATION_TOLERANCE_MIDI = 0.10
+    START_SECTION_END_RATIO = 0.25
+    END_SECTION_START_RATIO = 0.75
 
     def __post_init__(self):
         self._update_score_events()
@@ -315,26 +317,46 @@ class IntonationAnalyzer:
             if event["kind"] != "note":
                 continue
 
+            # TODO exception, no onset / offset, make a helper function
             real_start_sec = event["start_sec"] + event["rhythm"]["onset_diff_secs"]
             real_end_sec = event["end_sec"] + event["rhythm"]["offset_diff_secs"]
 
-            start_idx, end_idx = self._get_start_end_idx_at_times(
-                real_start_sec, real_end_sec
+            start_section_start_idx, end_section_end_idx = (
+                self._get_start_end_idx_at_times(real_start_sec, real_end_sec)
             )
 
+            # onset / offset information, start_sec / end_sec missing check
+            try:
+                start_section_end_idx, end_section_start_idx = (
+                    self._get_start_end_section_bounds_idxs(
+                        event, real_start_sec, real_end_sec
+                    )
+                )
+            except:
+                continue
+
             expected_pitch = event["midi"][0]
-            for pitch, pitch_time in zip(
-                self.pitches[start_idx:end_idx], self.pitch_times[start_idx:end_idx]
-            ):
-                event["intonation"]["pitch_diff"].append(
-                    float(float(pitch) - float(expected_pitch))
+            for i in range(start_section_start_idx, end_section_end_idx):
+                if i < start_section_end_idx:
+                    section = "start"
+                elif i < end_section_start_idx:
+                    section = "middle"
+                else:
+                    section = "end"
+
+                pitch = float(self.pitches[i])
+                pitch_time = float(self.pitch_times[i])
+                event["intonation"][section]["pitch_diffs"].append(
+                    pitch - expected_pitch
                 )
 
-                event["intonation"]["pitch_time"].append(float(pitch_time))
+                event["intonation"][section]["pitch_times"].append(pitch_time)
 
-                flag = self._get_intonation_flag(float(pitch), float(expected_pitch))
-                event["intonation"]["pitch_flag"].append(flag)
+                flag = self._get_intonation_flag(pitch, expected_pitch)
+                event["intonation"][section]["pitch_flags"].append(flag)
 
+    # TODO optimise, so it takes event as an argument and makes
+    # real_start_sec and real_end_sec computation inside the function
     def _get_start_end_idx_at_times(
         self, start_sec: float, end_sec: float
     ) -> tuple[int, int]:
@@ -350,13 +372,64 @@ class IntonationAnalyzer:
         else:
             return "wrong"
 
+    def _get_start_end_section_bounds_idxs(
+        self,
+        event: dict,
+        start_sec: float,
+        end_sec: float,
+    ) -> tuple[int, int]:
+        duration = end_sec - start_sec
+
+        start_time_bound = start_sec + duration * self.START_SECTION_END_RATIO
+        end_time_bound = end_sec + duration * self.END_SECTION_START_RATIO
+
+        return (
+            bisect_left(self.pitch_times, start_time_bound),
+            bisect_left(self.pitch_times, end_time_bound),
+        )
+
     def _update_score_events(self) -> None:
         for event in self.score_events:
             event.setdefault("intonation", {}).update(
                 {
-                    "pitch_diff": [],
-                    "pitch_time": [],
-                    "pitch_flag": [],
+                    "start": {
+                        "pitch_diffs": [],
+                        "pitch_times": [],
+                        "pitch_flags": [],  # perfect / okay / wrong
+                        #
+                        "perfect_ratio": None,  # 0.72
+                        "okay_ratio": None,  # 0.22
+                        "wrong_ratio": None,  # 0.06
+                        #
+                        "tendency": None,  # flat / sharp / unstable
+                        "overall_flag": None,  # perfect / okay / wrong
+                    },
+                    #
+                    "middle": {
+                        "pitch_diffs": [],
+                        "pitch_times": [],
+                        "pitch_flags": [],
+                        #
+                        "perfect_ratio": None,
+                        "okay_ratio": None,
+                        "wrong_ratio": None,
+                        #
+                        "tendency": None,
+                        "overall_flag": None,
+                    },
+                    #
+                    "end": {
+                        "pitch_diffs": [],
+                        "pitch_times": [],
+                        "pitch_flags": [],
+                        #
+                        "perfect_ratio": None,
+                        "okay_ratio": None,
+                        "wrong_ratio": None,
+                        #
+                        "tendency": None,
+                        "overall_flag": None,
+                    },
                 }
             )
 
