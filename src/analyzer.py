@@ -299,6 +299,7 @@ class PitchChangeDetector:
         return
 
 
+# TODO tendency
 @dataclass
 class IntonationAnalyzer:
     pitches: np.ndarray
@@ -383,9 +384,16 @@ class IntonationAnalyzer:
                 event["intonation"][section]["okay_ratio"] = okay_cnt / sum_cnt
                 event["intonation"][section]["wrong_ratio"] = wrong_cnt / sum_cnt
 
-    def _set_tendency_flag(self, event: dict) -> None:
+    def _set_overall_flag(self, event: dict) -> None:
         for section in ["start", "middle", "end"]:
             event_section = event["intonation"][section]
+
+            if (
+                event_section["wrong_ratio"] == None
+                or event_section["perfect_ratio"] == None
+                or event_section["okay_ratio"] == None
+            ):
+                continue
 
             if event_section["wrong_ratio"] >= 0.25:
                 event_section["overall_flag"] = "wrong"
@@ -397,7 +405,7 @@ class IntonationAnalyzer:
             else:
                 event_section["overall_flag"] = "okay"
 
-    def _set_overall_flag(self, event: dict) -> None: ...
+    def _set_tendency_flag(self, event: dict) -> None: ...
 
     # TODO optimise, so it takes event as an argument and makes
     # real_start_sec and real_end_sec computation inside the function
