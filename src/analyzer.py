@@ -312,6 +312,7 @@ class IntonationAnalyzer:
     def __post_init__(self):
         self._update_score_events()
 
+    # TODO event["intonation"]["end"] is always [] (empty)
     def add_intonation(self) -> None:
         for event in self.score_events:
             if event["kind"] != "note":
@@ -325,17 +326,16 @@ class IntonationAnalyzer:
                 self._get_start_end_idx_at_times(real_start_sec, real_end_sec)
             )
 
-            # onset / offset information, start_sec / end_sec missing check
-            try:
-                start_section_end_idx, end_section_start_idx = (
-                    self._get_start_end_section_bounds_idxs(
-                        event, real_start_sec, real_end_sec
-                    )
-                )
-            except:
-                continue
+            start_section_end_idx, end_section_start_idx = (
+                self._get_start_end_section_bounds_idxs(real_start_sec, real_end_sec)
+            )
 
             expected_pitch = event["midi"][0]
+            cnts = {
+                "start": [0, 0, 0],
+                "middle": [0, 0, 0],
+                "end": [0, 0, 0],
+            }
             for i in range(start_section_start_idx, end_section_end_idx):
                 if i < start_section_end_idx:
                     section = "start"
@@ -354,6 +354,37 @@ class IntonationAnalyzer:
 
                 flag = self._get_intonation_flag(pitch, expected_pitch)
                 event["intonation"][section]["pitch_flags"].append(flag)
+
+                if flag == "perfect":
+                    cnts[section][0] += 1
+                elif flag == "okay":
+                    cnts[section][1] = +1
+                elif flag == "wrong":
+                    cnts[section][2] += 1
+
+            self._set_ratio_flags(event, cnts)
+            self._set_tendency_flag(event)
+            self._set_overall_flag(event)
+
+    def _set_ratio_flags(
+        self,
+        event: dict,
+        ratio_cnts: dict[list[int, int, int], list[int, int, int], list[int, int, int]],
+    ) -> None:
+        sections = ratio_cnts.keys()
+        for section in sections:
+            perfect_cnt, okay_cnt, wrong_cnt = ratio_cnts[section]
+
+            if perfect_cnt > 0 or okay_cnt > 0 or wrong_cnt > 0:
+                sum_cnt = perfect_cnt + okay_cnt + wrong_cnt
+
+                event["intonation"][section]["perfect_ratio"] = perfect_cnt / sum_cnt
+                event["intonation"][section]["okay_ratio"] = okay_cnt / sum_cnt
+                event["intonation"][section]["wrong_ratio"] = wrong_cnt / sum_cnt
+
+    def _set_tendency_flag(self, event: dict) -> None: ...
+
+    def _set_overall_flag(self, event: dict) -> None: ...
 
     # TODO optimise, so it takes event as an argument and makes
     # real_start_sec and real_end_sec computation inside the function
@@ -374,7 +405,6 @@ class IntonationAnalyzer:
 
     def _get_start_end_section_bounds_idxs(
         self,
-        event: dict,
         start_sec: float,
         end_sec: float,
     ) -> tuple[int, int]:
@@ -401,7 +431,7 @@ class IntonationAnalyzer:
                         "okay_ratio": None,  # 0.22
                         "wrong_ratio": None,  # 0.06
                         #
-                        "tendency": None,  # flat / sharp / unstable
+                        "tendency": None,  # okay / flat / sharp / unstable
                         "overall_flag": None,  # perfect / okay / wrong
                     },
                     #
