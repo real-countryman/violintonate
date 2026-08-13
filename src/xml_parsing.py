@@ -265,6 +265,7 @@ class MusicxmlParser:
             events.append(
                 {
                     "kind": kind,
+                    "msr_number": el.measureNumber,
                     "pitch_name": pitch_names,
                     "midi": midi,
                     "start_quarter_length": start_ql,
