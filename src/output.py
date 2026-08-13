@@ -16,7 +16,10 @@ class Output:
             )
 
             note_info = [
-                ("Note", i + 1),  # TODO fix, now counts notes, not measures
+                (
+                    "Measure",
+                    self.score_events[i]["msr_number"],
+                ),
                 ("Note", self.score_events[i]["pitch_name"][0]),
             ]
 
