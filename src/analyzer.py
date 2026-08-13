@@ -580,6 +580,9 @@ class RhythmAnalyzer:
                     "offset_diff_secs": None,
                     "onset_diff_flag": None,
                     "offset_diff_flag": None,
+                    #
+                    "onset_diff_ql": None,
+                    "offset_diff_ql": None,
                 }
             )
 

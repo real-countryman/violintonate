@@ -4,6 +4,7 @@ from src.xml_parsing import *
 from src.graphs import *
 from src.analyzer import *
 from src.parser import *
+from src.output import *
 
 
 def main():
@@ -86,8 +87,8 @@ def main():
 
     intonation_analyzer.add_intonation()
 
-    for event in score_events:
-        print(event)
+    cli_output = Output(score_events)
+    cli_output.print_cli_output()
 
 
 if __name__ == "__main__":
