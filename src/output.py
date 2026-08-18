@@ -47,10 +47,10 @@ class Output:
             ]
 
             for label, onset, offset in rhythm_info:
-                if isinstance(onset, float):
-                    onset = f"{onset:.2f}"
+                if isinstance(onset, (int, float)):
+                    onset = f"{onset:+.2f}"
                 if isinstance(offset, float):
-                    offset = f"{offset:.2f}"
+                    offset = f"{offset:+.2f}"
 
                 print(f"{label:<18}: {str(onset):>13} {str(offset):>13}")
 
