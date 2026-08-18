@@ -54,21 +54,6 @@ def main():
     th_estimator = RmsThresholdEstimator(rms, times, score_events)
     th_estimator.add_rms_offsets_onsets()
 
-    """
-    onsets_offsets = th_estimator.get_rms_idxs_vals()
-
-    normalized_rms, normalized_times = th_estimator._normalize_values()
-
-    show_and_save_graph(
-        normalized_times,
-        normalized_rms,
-        onsets_offsets,
-        "Times",
-        "RMS",
-        "rms_graph_new",
-    )
-    """
-
     pitch_change_detector = PitchChangeDetector(
         filtered_pitches, filtered_times, score_events
     )

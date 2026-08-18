@@ -186,13 +186,11 @@ class PitchChangeDetector:
     ROLLING_MEDIAN_COUNT = 7
     SAME_PITCH_MIDI_TOLERANCE = 0.5
 
+    def __post_init__(self):
+        self._update_score_events()
+
     def add_tone_transitions_frequencies(self) -> None:
         for cur_event, next_event in zip(self.score_events, self.score_events[1:]):
-            cur_event["pitch"] = {
-                "cur_pitch": None,
-                "next_pitch": None,
-            }
-
             # Both must be notes (no rests)
             if cur_event["kind"] != "note" or next_event["kind"] != "note":
                 continue
@@ -214,10 +212,8 @@ class PitchChangeDetector:
                 left_values, right_values
             )
 
-            cur_event["pitch"] = {
-                "cur_pitch": cur_pitch,
-                "next_pitch": next_pitch,
-            }
+            cur_event["pitch"]["cur_pitch"] = cur_pitch
+            cur_event["pitch"]["next_pitch"] = next_pitch
 
         self.score_events[-1]["pitch"] = {
             "cur_pitch": None,
@@ -293,6 +289,16 @@ class PitchChangeDetector:
         right_pitch = np.nanmedian(right_pitches)
 
         return left_pitch, right_pitch
+
+    def _update_score_events(self):
+        for event in self.score_events:
+            event.setdefault("pitch", {}).update(
+                {
+                    "cur_pitch": None,
+                    "next_pitch": None,
+                    "transition_time": None,
+                }
+            )
 
     # TODO
     def _validate(self):
