@@ -77,7 +77,9 @@ def main():
     pitch_change_detector.add_tone_transition_times()
 
     rhythm_analyzer = RhythmAnalyzer(score_events)
-    rhythm_analyzer.add_rhythm_onset_offset_diffs_and_flags()
+    rhythm_analyzer.add_rhythm_onset_offset_diffs_and_flags(
+        time_mapper.get_seconds_per_beat()
+    )
 
     intonation_analyzer = IntonationAnalyzer(
         filtered_pitches,

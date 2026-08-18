@@ -171,6 +171,9 @@ class ScoreTimeMapper:
 
         return secs_per_bar
 
+    def get_seconds_per_beat(self):
+        return self.get_seconds_per_bar() / self.time_signature[0]
+
     def _quarter_length_to_seconds(self, ql: float) -> float:
         denominator = self.time_signature[1]
         return ql * 60 / self.bpm * denominator / 4

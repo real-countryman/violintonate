@@ -33,12 +33,16 @@ class Output:
             onset_diff_secs = self.score_events[i]["rhythm"]["onset_diff_secs"]
             offset_diff_secs = self.score_events[i]["rhythm"]["offset_diff_secs"]
 
+            onset_diff_beats = self.score_events[i]["rhythm"]["onset_diff_beats"]
+            offset_diff_beats = self.score_events[i]["rhythm"]["offset_diff_beats"]
+
             onset_diff_flag = self.score_events[i]["rhythm"]["onset_diff_flag"]
             offset_diff_flag = self.score_events[i]["rhythm"]["offset_diff_flag"]
 
             rhythm_info = [
                 ("Rhythm", "Onset", "Offset"),
-                ("Time difference:", onset_diff_secs, offset_diff_secs),
+                ("Time difference", onset_diff_secs, offset_diff_secs),
+                ("Beats difference:", onset_diff_beats, offset_diff_beats),
                 ("Evaluation:", onset_diff_flag, offset_diff_flag),
             ]
 

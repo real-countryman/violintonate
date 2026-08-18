@@ -496,7 +496,7 @@ class RhythmAnalyzer:
     def __post_init__(self):
         self._validate()
 
-    def add_rhythm_onset_offset_diffs_and_flags(self):
+    def add_rhythm_onset_offset_diffs_and_flags(self, beat_secs: float) -> None:
         self._update_score_events()
 
         first_event = self.score_events[0]
@@ -529,6 +529,7 @@ class RhythmAnalyzer:
                     )
 
             self._set_onset_offset_flags(cur_event)
+            self._add_diffs_in_beats(cur_event, beat_secs)
 
         last_event = self.score_events[-1]
 
@@ -548,7 +549,18 @@ class RhythmAnalyzer:
 
         self._set_onset_offset_flags(last_event)
 
-    def _set_onset_offset_flags(self, event):
+    def _add_diffs_in_beats(self, event: dict, beat_secs: float) -> None:
+        if event["rhythm"]["onset_diff_secs"] != None:
+            event["rhythm"]["onset_diff_beats"] = (
+                event["rhythm"]["onset_diff_secs"] / beat_secs
+            )
+
+        if event["rhythm"]["offset_diff_secs"] != None:
+            event["rhythm"]["offset_diff_beats"] = (
+                event["rhythm"]["offset_diff_secs"] / beat_secs
+            )
+
+    def _set_onset_offset_flags(self, event) -> None:
         # set onset flag
         if event["rhythm"]["onset_diff_secs"] != None:
             if abs(event["rhythm"]["onset_diff_secs"]) < self.ONSET_TOLERANCE_BEATS:
@@ -572,7 +584,7 @@ class RhythmAnalyzer:
             else:
                 event["rhythm"]["offset_diff_flag"] = "wrong"
 
-    def _update_score_events(self):
+    def _update_score_events(self) -> None:
         for event in self.score_events:
             event.setdefault("rhythm", {}).update(
                 {
@@ -581,8 +593,8 @@ class RhythmAnalyzer:
                     "onset_diff_flag": None,
                     "offset_diff_flag": None,
                     #
-                    "onset_diff_ql": None,
-                    "offset_diff_ql": None,
+                    "onset_diff_beats": None,
+                    "offset_diff_beats": None,
                 }
             )
 
