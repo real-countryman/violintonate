@@ -76,6 +76,7 @@ def main():
 
     cli_output = Output(score_events)
     cli_output.print_cli_output()
+    cli_output.render_and_save_graph_output()
 
 
 if __name__ == "__main__":

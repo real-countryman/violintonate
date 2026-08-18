@@ -1,4 +1,8 @@
 from dataclasses import dataclass
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+from matplotlib.lines import Line2D
+import numpy as np
 
 
 # TODO intonation tendency flag
@@ -99,4 +103,128 @@ class Output:
             )
             print() if i < len(self.score_events) - 1 else None
 
-    def render_and_save_graph_output(self): ...
+    def render_and_save_graph_output(self, save=True, show=True):
+        y_vals_intonation = []
+        y_vals_reference = []
+        x_vals_beats = []
+        colors = []
+
+        color_map = {
+            "wrong": "red",
+            "okay": "yellow",
+            "perfect": "green",
+        }
+
+        for event in self.score_events:
+            all_diffs = (
+                event["intonation"]["start"]["pitch_diffs"]
+                + event["intonation"]["middle"]["pitch_diffs"]
+                + event["intonation"]["end"]["pitch_diffs"]
+            )
+
+            all_flags = (
+                event["intonation"]["start"]["pitch_flags"]
+                + event["intonation"]["middle"]["pitch_flags"]
+                + event["intonation"]["end"]["pitch_flags"]
+            )
+
+            for diff, flag in zip(all_diffs, all_flags):
+                y_vals_intonation.append(event["midi"][0] + diff)
+                y_vals_reference.append(event["midi"][0])
+
+                colors.append(color_map.get(flag, "gray"))
+
+            x_vals_beats.extend(
+                np.linspace(
+                    float(event["start_quarter_length"]),
+                    float(event["end_quarter_length"]),
+                    len(all_diffs),
+                )
+            )
+
+        x_vals_beats = np.array(x_vals_beats)
+        y_vals_intonation = np.array(y_vals_intonation)
+        y_vals_reference = np.array(y_vals_reference)
+
+        fig, ax = plt.subplots()
+
+        # Reference pitch
+        ax.plot(
+            x_vals_beats,
+            y_vals_reference,
+            color="black",
+            linewidth=1.5,
+            label="Reference Pitch",
+        )
+
+        # Build line segments for player's intonation
+        points = np.column_stack((x_vals_beats, y_vals_intonation)).reshape(-1, 1, 2)
+
+        segments = np.concatenate(
+            [points[:-1], points[1:]],
+            axis=1,
+        )
+
+        # There are N-1 segments for N points
+        line_collection = LineCollection(
+            segments,
+            colors=colors[:-1],
+            linewidth=2,
+        )
+
+        ax.add_collection(line_collection)
+
+        # Make sure matplotlib includes the LineCollection in the axis limits
+        ax.autoscale()
+
+        ax.set_title("Intonation Difference Graph")
+        ax.set_xlabel("Beats")
+        ax.set_ylabel("Pitch")
+        ax.grid(True)
+
+        # Custom legend because LineCollection doesn't automatically
+        # produce the legend entries we want.
+        legend_items = [
+            Line2D(
+                [0],
+                [0],
+                color="black",
+                linewidth=1.5,
+                label="Reference Pitch",
+            ),
+            Line2D(
+                [0],
+                [0],
+                color="green",
+                linewidth=2,
+                label="Perfect",
+            ),
+            Line2D(
+                [0],
+                [0],
+                color="yellow",
+                linewidth=2,
+                label="Okay",
+            ),
+            Line2D(
+                [0],
+                [0],
+                color="red",
+                linewidth=2,
+                label="Wrong",
+            ),
+        ]
+
+        ax.legend(handles=legend_items)
+
+        if save:
+            plt.savefig(
+                "graph.png",
+                dpi=300,
+                bbox_inches="tight",
+            )
+
+        if show:
+            plt.show()
+        else:
+            plt.close()
