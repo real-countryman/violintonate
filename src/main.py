@@ -74,9 +74,9 @@ def main():
 
     intonation_analyzer.add_intonation()
 
-    cli_output = Output(score_events)
-    cli_output.print_cli_output()
-    cli_output.render_and_save_graph_output()
+    output = Output(score_events)
+    output.print_cli_output()
+    output.render_and_save_graph_output()
 
 
 if __name__ == "__main__":

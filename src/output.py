@@ -10,6 +10,10 @@ import numpy as np
 class Output:
     score_events: list[dict]
 
+    def print_score_events(self):
+        for event in self.score_events:
+            print(event)
+
     def print_cli_output(self):
         for i in range(len(self.score_events)):
             if self.score_events[i]["kind"] != "note":
@@ -107,32 +111,67 @@ class Output:
         y_vals_intonation = []
         y_vals_reference = []
         x_vals_beats = []
-        colors = []
+
+        x_onset_rhythm_points = []
+        y_onset_rhythm_points = []
+        x_offset_rhythm_points = []
+        y_offset_rhythm_points = []
+
+        intonation_colors = []
+        rhythm_onset_colors = []
+        rhythm_offset_colors = []
 
         color_map = {
             "wrong": "red",
             "okay": "yellow",
             "perfect": "green",
+            None: "blue",
         }
 
         for event in self.score_events:
+            if event["kind"] != "note":
+                continue
+
             all_diffs = (
                 event["intonation"]["start"]["pitch_diffs"]
                 + event["intonation"]["middle"]["pitch_diffs"]
                 + event["intonation"]["end"]["pitch_diffs"]
             )
 
-            all_flags = (
+            add_intonation_flags = (
                 event["intonation"]["start"]["pitch_flags"]
                 + event["intonation"]["middle"]["pitch_flags"]
                 + event["intonation"]["end"]["pitch_flags"]
             )
 
-            for diff, flag in zip(all_diffs, all_flags):
+            # if None, append perfect default onset and offset to the graph
+            onset_point, offset_point = self._get_rhythm_points(event)
+            if onset_point != None:
+                x_onset_rhythm_points.append(onset_point[0])
+                y_onset_rhythm_points.append(onset_point[1])
+            else:
+                x_onset_rhythm_points.append(event["start_quarter_length"])
+                y_onset_rhythm_points.append(event["midi"][0])
+
+            if offset_point != None:
+                x_offset_rhythm_points.append(offset_point[0])
+                y_offset_rhythm_points.append(offset_point[1])
+            else:
+                x_offset_rhythm_points.append(event["end_quarter_length"])
+                y_offset_rhythm_points.append(event["midi"][0])
+
+            # appending None: not a bug, makes color blue!
+            rhythm_onset_flag = event["rhythm"]["onset_diff_flag"]
+            rhythm_offset_flag = event["rhythm"]["offset_diff_flag"]
+
+            rhythm_onset_colors.append(color_map.get(rhythm_onset_flag, "gray"))
+            rhythm_offset_colors.append(color_map.get(rhythm_offset_flag, "gray"))
+
+            for diff, flag in zip(all_diffs, add_intonation_flags):
                 y_vals_intonation.append(event["midi"][0] + diff)
                 y_vals_reference.append(event["midi"][0])
 
-                colors.append(color_map.get(flag, "gray"))
+                intonation_colors.append(color_map.get(flag, "gray"))
 
             x_vals_beats.extend(
                 np.linspace(
@@ -146,7 +185,7 @@ class Output:
         y_vals_intonation = np.array(y_vals_intonation)
         y_vals_reference = np.array(y_vals_reference)
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(20, 10))
 
         # Reference pitch
         ax.plot(
@@ -168,11 +207,33 @@ class Output:
         # There are N-1 segments for N points
         line_collection = LineCollection(
             segments,
-            colors=colors[:-1],
+            colors=intonation_colors[:-1],
             linewidth=2,
         )
 
         ax.add_collection(line_collection)
+
+        # rhythm onset points
+        ax.scatter(
+            x_onset_rhythm_points,
+            y_onset_rhythm_points,
+            c=rhythm_onset_colors,
+            s=50,
+            zorder=10,
+            marker="^",
+            edgecolors="black",
+        )
+
+        # rhythm offset points
+        ax.scatter(
+            x_offset_rhythm_points,
+            y_offset_rhythm_points,
+            c=rhythm_offset_colors,
+            s=50,
+            zorder=10,
+            marker="o",
+            edgecolors="black",
+        )
 
         # Make sure matplotlib includes the LineCollection in the axis limits
         ax.autoscale()
@@ -213,6 +274,33 @@ class Output:
                 linewidth=2,
                 label="Wrong",
             ),
+            Line2D(
+                [0],
+                [0],
+                color="blue",
+                linewidth=2,
+                label="Undetected",
+            ),
+            Line2D(
+                [0],
+                [0],
+                marker="^",
+                linestyle="None",
+                markerfacecolor="gray",
+                markeredgecolor="gray",
+                markersize=7,
+                label="Onset",
+            ),
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                linestyle="None",
+                markerfacecolor="gray",
+                markeredgecolor="gray",
+                markersize=7,
+                label="Offset",
+            ),
         ]
 
         ax.legend(handles=legend_items)
@@ -228,3 +316,30 @@ class Output:
             plt.show()
         else:
             plt.close()
+
+    def _get_rhythm_points(
+        self,
+        event,
+    ) -> tuple[tuple[float, float], tuple[float, float]] | tuple[None, None]:
+        print(event)
+
+        if (
+            event["rhythm"]["onset_diff_beats"] == None
+            or event["rhythm"]["offset_diff_beats"] == None
+            or event["start_quarter_length"] == None
+            or event["end_quarter_length"] == None
+        ):
+            return None, None
+
+        return (
+            (
+                event["start_quarter_length"] + event["rhythm"]["onset_diff_beats"],
+                event["midi"][0],
+            ),
+            (
+                event["end_quarter_length"] + event["rhythm"]["offset_diff_beats"],
+                event["midi"][0],
+            ),
+        )
+
+    def _validate(self): ...
