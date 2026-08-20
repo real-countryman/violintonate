@@ -22,7 +22,7 @@ def get_start_end_time_idx(times: np.ndarray, exp_time: float) -> tuple[int, int
 # TODO think of modifiyng times and rms, maybe main should handle it?
 # TODO offsets too late
 @dataclass
-class RmsThresholdEstimator:
+class RmsOnsetOffsetDetector:
     rms: np.ndarray
     times: np.ndarray
     # TODO make an argument, not a class property

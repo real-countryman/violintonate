@@ -50,8 +50,8 @@ def main():
     filtered_pitches, filtered_times = pitch_filter.filter_frames()
     filtered_pitches = hz_to_midi(filtered_pitches)
 
-    th_estimator = RmsThresholdEstimator(rms, times, score_events)
-    th_estimator.add_rms_offsets_onsets()
+    rms_onset_offset_detector = RmsOnsetOffsetDetector(rms, times, score_events)
+    rms_onset_offset_detector.add_rms_offsets_onsets()
 
     pitch_change_detector = PitchChangeDetector(
         filtered_pitches, filtered_times, score_events
