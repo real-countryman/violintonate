@@ -1,3 +1,4 @@
+.SILENT:
 PYTHON := python3
 VENV := .venv
 PIP := $(VENV)/bin/pip
@@ -29,10 +30,10 @@ help:
 
 setup:
 	$(PYTHON) -m venv $(VENV)
-	$(PIP) install --upgrade pip
-	@if [ -f requirements.txt ]; then $(PIP) install -r requirements.txt; fi
+	$(PIP) install -qq --upgrade pip
+	@if [ -f requirements.txt ]; then $(PIP) install -qq -r requirements.txt; fi
 
-run:
+run: setup
 	$(PYTHON_VENV) -m src.main $(ARGS)
 
 test: setup
