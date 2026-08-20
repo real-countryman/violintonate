@@ -49,5 +49,25 @@ def parse_args():
         default=0.0,
         help="End measure decimal offset measured in beats. Default is 0.",
     )
+    parser.add_argument(
+        "--audacity_json",
+        action="store_true",
+        help="Prints json with onset secs and offset secs for audacity script.",
+    )
+    parser.add_argument(
+        "--no_show_graph",
+        action="store_true",
+        help="Disables showing of a graph.",
+    )
+    parser.add_argument(
+        "--no_save_graph",
+        action="store_true",
+        help="Disables saving of the graph.",
+    )
+    parser.add_argument(
+        "--no_cli_output",
+        action="store_true",
+        help="Disables CLI output with playing info.",
+    )
 
     return parser.parse_args()

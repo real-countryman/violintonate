@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
 import numpy as np
+import json
 
 
 # TODO intonation tendency flag
@@ -13,6 +14,19 @@ class Output:
     def print_score_events(self):
         for event in self.score_events:
             print(event)
+
+    def print_rhythm_json(self):
+        output = []
+
+        for event in self.score_events:
+            output.append(
+                {
+                    "start_sec": event["start_sec"],
+                    "end_sec": event["end_sec"],
+                }
+            )
+
+        print(json.dumps(output, indent=2))
 
     def print_cli_output(self):
         for i in range(len(self.score_events)):

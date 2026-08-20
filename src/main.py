@@ -75,8 +75,20 @@ def main():
     intonation_analyzer.add_intonation()
 
     output = Output(score_events)
-    output.print_cli_output()
-    output.render_and_save_graph_output()
+    if args.audacity_json:
+        output.print_rhythm_json()
+    if not args.no_cli_output:
+        output.print_cli_output()
+
+    show_graph_bool = True
+    save_graph_bool = True
+    if args.no_show_graph:
+        show_graph_bool = False
+    if args.no_save_graph:
+        save_graph_bool = False
+
+    if show_graph_bool or save_graph_bool:
+        output.render_and_save_graph_output(show_graph_bool, save_graph_bool)
 
 
 if __name__ == "__main__":
