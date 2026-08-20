@@ -5,6 +5,7 @@ from src.graphs import *
 from src.analyzer import *
 from src.parser import *
 from src.output import *
+from src.audacity_pipeline import duplicate_to_tracks
 
 
 def main():

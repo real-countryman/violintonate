@@ -20,6 +20,8 @@ help:
 	@echo "  make run ARGS=\"foo bar --debug\""
 	@echo "      Pass arguments to main.py."
 	@echo ""
+	@echo "  make audacity ARGS=\"times_json_path violin_audio_path output_aup3_path\""
+	@echo ""
 	@echo "  make clean"
 	@echo "      Remove the virtual environment."
 	@echo ""
@@ -35,6 +37,15 @@ setup:
 
 run: setup
 	$(PYTHON_VENV) -m src.main $(ARGS)
+
+audacity: setup
+	audacity & \
+	echo "Waiting for 10 seconds for Audacity to start"; \
+	sleep 10; \
+	$(PYTHON_VENV) -m src.audacity_pipeline \
+		$(word 2,$(ARGS)) \
+		$(word 3,$(ARGS)) \
+		< $(word 1,$(ARGS))
 
 test: setup
 	$(PYTHON_VENV) -m pytest tests/
