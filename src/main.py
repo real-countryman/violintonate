@@ -4,6 +4,7 @@ from src.xml_parsing import *
 from src.analyzer import *
 from src.parser import *
 from src.output import *
+from src.graphs import show_and_save_rms_graph
 
 
 def main():
@@ -52,6 +53,18 @@ def main():
 
     rms_onset_offset_detector = RmsOnsetOffsetDetector(rms, times, score_events)
     rms_onset_offset_detector.add_rms_offsets_onsets()
+
+    onsets_offsets = rms_onset_offset_detector.get_rms_idxs_vals()
+    mean_rms, mean_times = rms_onset_offset_detector._normalize_values()
+
+    show_and_save_rms_graph(
+        mean_times,
+        mean_rms,
+        onsets_offsets,
+        "Times",
+        "RMS",
+        "RMS Onsets, Offsets",
+    )
 
     pitch_change_detector = PitchChangeDetector(
         filtered_pitches, filtered_times, score_events

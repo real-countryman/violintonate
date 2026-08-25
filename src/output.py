@@ -232,7 +232,7 @@ class Output:
             x_onset_rhythm_points,
             y_onset_rhythm_points,
             c=rhythm_onset_colors,
-            s=50,
+            s=200,
             zorder=10,
             marker="^",
             edgecolors="black",
@@ -243,7 +243,7 @@ class Output:
             x_offset_rhythm_points,
             y_offset_rhythm_points,
             c=rhythm_offset_colors,
-            s=50,
+            s=200,
             zorder=10,
             marker="o",
             edgecolors="black",
@@ -252,9 +252,10 @@ class Output:
         # Make sure matplotlib includes the LineCollection in the axis limits
         ax.autoscale()
 
-        ax.set_title("Intonation Difference Graph")
-        ax.set_xlabel("Beats")
-        ax.set_ylabel("Pitch")
+        ax.set_title("Intonation Difference Graph", fontsize=28)
+        ax.set_xlabel("Beats", fontsize=22)
+        ax.set_ylabel("Pitch", fontsize=22)
+        ax.tick_params(axis="both", labelsize=22)
         ax.grid(True)
 
         # Custom legend because LineCollection doesn't automatically
@@ -317,7 +318,7 @@ class Output:
             ),
         ]
 
-        ax.legend(handles=legend_items)
+        ax.legend(handles=legend_items, fontsize=22)
 
         if save:
             plt.savefig(
