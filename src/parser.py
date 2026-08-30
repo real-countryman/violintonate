@@ -69,5 +69,10 @@ def parse_args():
         action="store_true",
         help="Disables CLI output with playing info.",
     )
+    parser.add_argument(
+        "--rms_graph",
+        action="store_true",
+        help="Shows and saves RMS graph of the interpretation. Used mainly for debugging.",
+    )
 
     return parser.parse_args()
