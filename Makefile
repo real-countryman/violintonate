@@ -5,9 +5,16 @@ PIP := $(VENV)/bin/pip
 PYTHON_VENV := $(VENV)/bin/python
 ARGS ?=
 
+SPHINX_BUILD := $(VENV)/bin/sphinx-build
+SPHINX_APIDOC := $(VENV)/bin/sphinx-apidoc
+
+DOCS_DIR := docs/source
+DOCS_API_DIR := $(DOCS_DIR)/api
+DOCS_BUILD_DIR := docs/_build/html
+
 .DEFAULT_GOAL := help
 
-.PHONY: help setup run clean test
+.PHONY: help setup run clean test audacity docs
 
 help:
 	@echo "Usage:"
@@ -50,5 +57,15 @@ audacity: setup
 test: setup
 	$(PYTHON_VENV) -m pytest tests/
 
+SPHINX_APIDOC := $(VENV)/bin/sphinx-apidoc
+
+docs: setup
+	$(SPHINX_APIDOC) -f -e -o $(DOCS_API_DIR) src
+	$(SPHINX_BUILD) -b html $(DOCS_DIR) $(DOCS_BUILD_DIR)
+	@echo "Documentation generated at $(DOCS_BUILD_DIR)/index.html"
+
 clean:
 	rm -rf $(VENV)
+	rm -rf $(DOCS_DIR)/_build
+	rm -rf $(DOCS_BUILD_DIR)
+	rm -rf $(DOCS_API_DIR)
