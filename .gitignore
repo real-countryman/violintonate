@@ -3,3 +3,5 @@
 /output
 *.png
 *.zip
+/input
+/output
