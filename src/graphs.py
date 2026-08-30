@@ -10,6 +10,22 @@ def show_and_save_rms_graph(
     y_label: str,
     title: str,
 ) -> None:
+    """Display and save an RMS graph with detected onset and offset points.
+
+    Plots RMS values over the provided x-axis values and marks detected RMS
+    onsets and offsets. The resulting graph is saved as a PNG file using the
+    plot title as the filename and is also displayed.
+
+    Args:
+        x_vals: Array containing the x-axis values.
+        y_vals: Array containing the RMS values corresponding to ``x_vals``.
+        points: List of dictionaries containing detected RMS onset and offset
+            indices and values.
+        x_label: Label of the x-axis.
+        y_label: Label of the y-axis.
+        title: Title of the graph and filename of the saved image.
+    """
+
     plt.figure(figsize=(20, 10))
 
     plt.plot(x_vals, y_vals, label="RMS")
