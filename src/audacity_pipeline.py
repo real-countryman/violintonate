@@ -1,3 +1,10 @@
+"""Utility script for audacity.
+
+Creates .json with start_sec and end_sec for each score event,
+passes it into audacity, which cuts the recording depending on
+onsets and offsets.
+"""
+
 #!/usr/bin/env python3
 
 import json
