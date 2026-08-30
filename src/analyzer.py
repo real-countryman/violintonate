@@ -9,6 +9,20 @@ NOTE_BOUNDARY_SEARCH_RADIUS_SEC = 0.15
 
 # TODO make NOTE_BOUNDARY_SEARCH_RADIUS_SEC a parameter
 def get_start_end_time_idx(times: np.ndarray, exp_time: float) -> tuple[int, int]:
+    """Return the index range around an expected time value.
+
+    The range is defined by NOTE_BOUNDARY_SEARCH_RADIUS_SEC on both sides
+    of exp_time. The returned indices can be used directly for NumPy
+    slicing as times[left_idx:right_idx].
+
+    Args:
+    times: Sorted array of time values in seconds.
+    exp_time: Expected time in seconds around which to search.
+
+    Returns:
+    A tuple containing the left-inclusive and right-exclusive indices
+    delimiting the search window in times.
+    """
 
     max_time = exp_time + NOTE_BOUNDARY_SEARCH_RADIUS_SEC
     min_time = exp_time - NOTE_BOUNDARY_SEARCH_RADIUS_SEC
@@ -23,6 +37,21 @@ def get_start_end_time_idx(times: np.ndarray, exp_time: float) -> tuple[int, int
 # TODO offsets too late
 @dataclass
 class RmsOnsetOffsetDetector:
+    """Detect RMS-based onset and offset positions for score events.
+
+    The detector smooths the RMS signal and corresponding time values by
+    averaging them in fixed-size groups. It then searches for local minima
+    around the expected onset and offset times of each score event.
+
+    Detected RMS indices, values, and times are stored in the ``rms`` field
+    of each score event.
+
+    Attributes:
+        rms: Array of RMS values.
+        times: Array of time values in seconds corresponding to ``rms``.
+        score_events: Score events containing expected start and end times.
+    """
+
     rms: np.ndarray
     times: np.ndarray
     # TODO make an argument, not a class property
@@ -31,6 +60,16 @@ class RmsOnsetOffsetDetector:
     GROUP_SIZE = 5
 
     def get_rms_idxs_vals(self) -> list[dict[np.int64, np.float32]]:
+        """Return detected RMS onset and offset information for all score events.
+
+        Returns:
+            A list of dictionaries containing the detected onset and offset
+            indices, RMS values, and times for each score event.
+
+        Raises:
+            ValueError: If any score event is missing ``start_sec`` or ``end_sec``.
+        """
+
         result: list[dict[np.int64, np.float32]] = []
 
         if any(
@@ -54,11 +93,28 @@ class RmsOnsetOffsetDetector:
         return result
 
     def add_rms_offsets_onsets(self) -> None:
+        """Detect and add RMS onset and offset information to score events.
+
+        The RMS signal and corresponding time values are first smoothed by
+        averaging consecutive groups of samples. Offset and onset positions are
+        then detected as local minima near the expected event boundaries.
+        """
+
         mean_rms, mean_times = self._normalize_values()
         self._add_rms_offsets(mean_rms, mean_times)
         self._add_rms_onsets(mean_rms, mean_times)
 
     def _normalize_values(self) -> tuple[np.ndarray, np.ndarray]:
+        """Smooth the RMS signal and corresponding time values.
+
+        Values are divided into consecutive groups of ``GROUP_SIZE`` samples.
+        Each group is replaced by its arithmetic mean.
+
+        Returns:
+            A tuple containing the smoothed RMS values and their corresponding
+            mean time values.
+        """
+
         return (
             np.array(
                 [
@@ -81,6 +137,17 @@ class RmsOnsetOffsetDetector:
         )
 
     def _add_rms_offsets(self, rms: np.ndarray, times: np.ndarray) -> None:
+        """Detect RMS offsets and add them to score events.
+
+        For each event, a search window is created around its expected end time.
+        The rightmost local minimum within that window is selected as the
+        detected offset.
+
+        Args:
+            rms: Smoothed RMS values.
+            times: Time values in seconds corresponding to ``rms``.
+        """
+
         for event in self.score_events:
             left_idx, right_idx = get_start_end_time_idx(
                 times,
@@ -107,6 +174,17 @@ class RmsOnsetOffsetDetector:
                 event["rms"]["rms_offset_time"] = times[global_idx]
 
     def _add_rms_onsets(self, rms: np.ndarray, times: np.ndarray) -> None:
+        """Detect RMS onsets and add them to score events.
+
+        For each event, a search window is created around its expected start
+        time. The leftmost local minimum within that window is selected as the
+        detected onset.
+
+        Args:
+            rms: Smoothed RMS values.
+            times: Time values in seconds corresponding to ``rms``.
+        """
+
         for event in self.score_events:
             left_idx, right_idx = get_start_end_time_idx(
                 times,
@@ -131,6 +209,21 @@ class RmsOnsetOffsetDetector:
                 event["rms"]["rms_onset_time"] = times[global_idx]
 
     def _rightmost_local_minimum(self, y: np.ndarray):
+        """Find the rightmost local minimum in an array.
+
+        Plateau minima are supported by allowing equality with neighboring
+        values as long as the candidate is strictly smaller than at least one
+        neighbor. If the global minimum occurs at an array boundary, that
+        boundary is returned.
+
+        Args:
+            y: One-dimensional array in which to search.
+
+        Returns:
+            A tuple containing the index and value of the rightmost local
+            minimum. Returns ``(None, None)`` if no local minimum is found.
+        """
+
         y = np.asarray(y)
 
         # if values always decreasing
@@ -152,6 +245,21 @@ class RmsOnsetOffsetDetector:
         return None, None
 
     def _leftmost_local_minimum(self, y: np.ndarray):
+        """Find the leftmost local minimum in an array.
+
+        Plateau minima are supported by allowing equality with neighboring
+        values as long as the candidate is strictly smaller than at least one
+        neighbor. If the global minimum occurs at an array boundary, that
+        boundary is returned.
+
+        Args:
+            y: One-dimensional array in which to search.
+
+        Returns:
+            A tuple containing the index and value of the leftmost local
+            minimum. Returns ``(None, None)`` if no local minimum is found.
+        """
+
         y = np.asarray(y)
 
         # if values always decreasing
@@ -174,11 +282,35 @@ class RmsOnsetOffsetDetector:
 
     # TODO
     def _validate(self):
+        """TODO:
+        Validate the detector input data and configuration.
+
+        Raises:
+            ValueError: If the detector contains invalid or inconsistent input
+                data.
+        """
+
         return
 
 
 @dataclass
 class PitchChangeDetector:
+    """Detect pitch changes and transition times between consecutive score events.
+
+    The detector estimates the performed pitch before and after expected note
+    boundaries using rolling medians. For transitions between different notes,
+    it also determines when the performed pitch reaches and stabilizes around
+    the following note's pitch.
+
+    Detected pitch information is stored in the ``pitch`` field of each score
+    event.
+
+    Attributes:
+        pitches: Array of detected pitch values in MIDI units.
+        pitch_times: Array of time values in seconds corresponding to ``pitches``.
+        score_events: Score events containing expected pitch and timing information.
+    """
+
     pitches: np.ndarray
     pitch_times: np.ndarray
     score_events: list[dict]
@@ -190,6 +322,17 @@ class PitchChangeDetector:
         self._update_score_events()
 
     def add_tone_transitions_frequencies(self) -> None:
+        """Estimate performed pitches before and after note transitions.
+
+        For each pair of consecutive score events, transitions involving rests or
+        identical pitches are ignored. Pitch values before and after the expected
+        boundary are collected and processed using rolling medians. The resulting
+        pitch estimates are stored as ``cur_pitch`` and ``next_pitch`` in the
+        current event.
+
+        The final score event is initialized without transition pitch information.
+        """
+
         for cur_event, next_event in zip(self.score_events, self.score_events[1:]):
             # Both must be notes (no rests)
             if cur_event["kind"] != "note" or next_event["kind"] != "note":
@@ -225,6 +368,17 @@ class PitchChangeDetector:
             ...
 
     def add_tone_transition_times(self) -> None:
+        """Detect and store pitch transition times.
+
+        For each score event except the last one, a search window is created around
+        its expected end time. The transition time is defined as the first time at
+        which three consecutive detected pitch values are within
+        ``SAME_PITCH_MIDI_TOLERANCE`` of the estimated next pitch.
+
+        If no next pitch is available, the transition time is set to ``None``.
+        The final score event always has no transition time.
+        """
+
         for event in self.score_events[: len(self.score_events) - 1]:
             left_idx, right_idx = get_start_end_time_idx(
                 self.pitch_times, float(event["end_sec"])
@@ -256,6 +410,20 @@ class PitchChangeDetector:
         self.score_events[-1]["pitch"]["transition_time"] = None
 
     def _get_rolling_medians_cur_next_values(self, left_values, right_values):
+        """Calculate rolling median pitch values on both sides of a transition.
+
+        A centered rolling median with a window size of three samples is applied
+        separately to the pitch values before and after the expected transition.
+
+        Args:
+            left_values: Pitch values preceding the expected transition.
+            right_values: Pitch values following the expected transition.
+
+        Returns:
+            A tuple containing the rolling median arrays for the left and right
+            pitch values.
+        """
+
         lv = pd.Series(left_values)
         rv = pd.Series(right_values)
 
@@ -281,6 +449,21 @@ class PitchChangeDetector:
         return lv_rolling_median, rv_rolling_median
 
     def _get_cur_next_rolling_median_pitch(self, left_values, right_values):
+        """Estimate the current and next performed pitches around a transition.
+
+        Rolling median filtering is first applied to pitch values on both sides of
+        the expected transition. The representative pitch for each side is then
+        calculated using the median of the filtered values while ignoring NaNs.
+
+        Args:
+            left_values: Pitch values preceding the expected transition.
+            right_values: Pitch values following the expected transition.
+
+        Returns:
+            A tuple containing the estimated current pitch and next pitch in MIDI
+            units.
+        """
+
         left_pitches, right_pitches = self._get_rolling_medians_cur_next_values(
             left_values, right_values
         )
@@ -291,6 +474,13 @@ class PitchChangeDetector:
         return left_pitch, right_pitch
 
     def _update_score_events(self):
+        """Initialize pitch analysis fields in all score events.
+
+        Ensures that every score event contains a ``pitch`` dictionary with
+        ``cur_pitch``, ``next_pitch``, and ``transition_time`` initialized to
+        ``None``.
+        """
+
         for event in self.score_events:
             event.setdefault("pitch", {}).update(
                 {
@@ -302,12 +492,38 @@ class PitchChangeDetector:
 
     # TODO
     def _validate(self):
+        """TODO:
+        Validate the detector input data and configuration.
+
+        Raises:
+            ValueError: If the detector contains invalid or inconsistent pitch,
+                timing, or score event data.
+        """
+
         return
 
 
 # TODO tendency
 @dataclass
 class IntonationAnalyzer:
+    """Analyze performed pitch accuracy for individual score events.
+
+    Each note event is divided into start, middle, and end sections based on
+    its performed duration. Pitch frames within each section are compared with
+    the expected MIDI pitch and classified as ``perfect``, ``okay``, or
+    ``wrong``.
+
+    For every section, the analyzer stores pitch differences, pitch times,
+    individual intonation flags, flag ratios, tendency information, and an
+    overall intonation flag.
+
+    Attributes:
+        pitches: Array of detected pitch values in MIDI units.
+        pitch_times: Array of time values in seconds corresponding to ``pitches``.
+        score_events: Score events containing pitch, timing, and rhythm
+            information.
+    """
+
     pitches: np.ndarray
     pitch_times: np.ndarray
     score_events: list[dict]
@@ -318,10 +534,25 @@ class IntonationAnalyzer:
     END_SECTION_START_RATIO = 0.75
 
     def __post_init__(self):
+        self._validate()
         self._update_score_events()
 
     # TODO event["intonation"]["end"] is always [] (empty)
     def add_intonation(self) -> None:
+        """Analyze intonation for all note events.
+
+        The performed start and end times are calculated using the detected onset
+        and offset differences. Each note is then divided into start, middle, and
+        end sections.
+
+        Every pitch frame is compared with the expected pitch and assigned an
+        intonation flag. Flag ratios and an overall intonation flag are subsequently
+        calculated for each section.
+
+        TODO:
+        Add pitch tendency analysis for each section.
+        """
+
         for event in self.score_events:
             if event["kind"] != "note":
                 continue
@@ -379,6 +610,18 @@ class IntonationAnalyzer:
         event: dict,
         ratio_cnts: dict[list[int, int, int], list[int, int, int], list[int, int, int]],
     ) -> None:
+        """Calculate and store intonation flag ratios for each note section.
+
+        The numbers of ``perfect``, ``okay``, and ``wrong`` pitch frames are
+        converted into ratios relative to the total number of analyzed frames in
+        each section. Sections containing no analyzed frames are left unchanged.
+
+        Args:
+            event: Score event whose intonation information is updated.
+            ratio_cnts: Mapping of section names to counts of perfect, okay, and
+                wrong pitch frames.
+        """
+
         sections = ratio_cnts.keys()
         for section in sections:
             perfect_cnt, okay_cnt, wrong_cnt = ratio_cnts[section]
@@ -391,6 +634,19 @@ class IntonationAnalyzer:
                 event["intonation"][section]["wrong_ratio"] = wrong_cnt / sum_cnt
 
     def _set_overall_flag(self, event: dict) -> None:
+        """Determine the overall intonation flag for each note section.
+
+        A section is classified as ``wrong`` when at least 25% of its analyzed
+        frames are wrong. It is classified as ``perfect`` when at least 75% are
+        perfect and at most 5% are wrong. All other valid sections are classified
+        as ``okay``.
+
+        Sections without calculated intonation ratios are ignored.
+
+        Args:
+            event: Score event whose section-level overall flags are updated.
+        """
+
         for section in ["start", "middle", "end"]:
             event_section = event["intonation"][section]
 
@@ -413,16 +669,52 @@ class IntonationAnalyzer:
 
     def _set_tendency_flag(self, event: dict) -> None: ...
 
+    """TODO:
+    Determine the pitch tendency for each note section.
+
+    The tendency describes the directional behavior of the performed pitch,
+    such as being in tune, flat, sharp, or unstable.
+    """
+
     # TODO optimise, so it takes event as an argument and makes
     # real_start_sec and real_end_sec computation inside the function
     def _get_start_end_idx_at_times(
         self, start_sec: float, end_sec: float
     ) -> tuple[int, int]:
+        """Return pitch-array indices corresponding to a performed time interval.
+
+        The start and end times are converted to indices in ``pitch_times`` using
+        left-side binary insertion points.
+
+        Args:
+            start_sec: Start of the performed note interval in seconds.
+            end_sec: End of the performed note interval in seconds.
+
+        Returns:
+            A tuple containing the start-inclusive and end-exclusive pitch indices.
+        """
+
         return bisect_left(self.pitch_times, start_sec), bisect_left(
             self.pitch_times, end_sec
         )
 
     def _get_intonation_flag(self, pitch: float, expected_pitch: float) -> str:
+        """Classify a performed pitch relative to the expected pitch.
+
+        A pitch is classified as ``perfect`` when its absolute difference from the
+        expected pitch is smaller than ``INTONATION_TOLERANCE_MIDI``. Differences
+        below twice this tolerance are classified as ``okay``. All larger
+        differences are classified as ``wrong``.
+
+        Args:
+            pitch: Performed pitch in MIDI units.
+            expected_pitch: Expected pitch in MIDI units.
+
+        Returns:
+            ``"perfect"``, ``"okay"``, or ``"wrong"`` according to the pitch
+            difference.
+        """
+
         if abs(pitch - expected_pitch) < self.INTONATION_TOLERANCE_MIDI:
             return "perfect"
         elif abs(pitch - expected_pitch) < 2 * self.INTONATION_TOLERANCE_MIDI:
@@ -435,6 +727,21 @@ class IntonationAnalyzer:
         start_sec: float,
         end_sec: float,
     ) -> tuple[int, int]:
+        """Return the indices separating the start, middle, and end note sections.
+
+        The note duration is divided according to ``START_SECTION_END_RATIO`` and
+        ``END_SECTION_START_RATIO``. The resulting time boundaries are converted
+        to indices in ``pitch_times``.
+
+        Args:
+            start_sec: Performed note start time in seconds.
+            end_sec: Performed note end time in seconds.
+
+        Returns:
+            A tuple containing the index marking the end of the start section and
+            the index marking the beginning of the end section.
+        """
+
         duration = end_sec - start_sec
 
         start_time_bound = start_sec + duration * self.START_SECTION_END_RATIO
@@ -446,6 +753,13 @@ class IntonationAnalyzer:
         )
 
     def _update_score_events(self) -> None:
+        """Initialize intonation analysis fields for all score events.
+
+        Each event receives ``start``, ``middle``, and ``end`` intonation sections.
+        Every section contains storage for pitch differences, pitch times,
+        per-frame flags, flag ratios, tendency, and the overall intonation flag.
+        """
+
         for event in self.score_events:
             event.setdefault("intonation", {}).update(
                 {
@@ -490,9 +804,29 @@ class IntonationAnalyzer:
                 }
             )
 
+    def _validate(self):
+        """TODO:
+        Validate the intonation analyzer input data.
+        """
+        ...
+
 
 @dataclass
 class RhythmAnalyzer:
+    """Analyze rhythmic onset and offset accuracy for score events.
+
+    The analyzer compares detected note boundaries with their expected score
+    times. Pitch transition times are preferred when available; otherwise,
+    RMS-based onset and offset times are used.
+
+    Timing differences are stored in seconds and beats and classified as
+    ``perfect``, ``okay``, or ``wrong`` according to configured tolerances.
+
+    Attributes:
+        score_events: Score events containing expected timing, RMS, and pitch
+            transition information.
+    """
+
     score_events: list[dict]
 
     # TODO may need tweaking
@@ -503,6 +837,20 @@ class RhythmAnalyzer:
         self._validate()
 
     def add_rhythm_onset_offset_diffs_and_flags(self, beat_secs: float) -> None:
+        """Calculate onset and offset timing differences and rhythm flags.
+
+        For each score event, detected note boundaries are compared with their
+        expected start and end times. Pitch transition times are used for
+        boundaries between notes when available; otherwise, RMS onset and offset
+        times are used.
+
+        The resulting differences are stored in seconds and beats, and each
+        boundary is assigned a rhythm accuracy flag.
+
+        Args:
+            beat_secs: Duration of one beat in seconds.
+        """
+
         self._update_score_events()
 
         first_event = self.score_events[0]
@@ -556,6 +904,16 @@ class RhythmAnalyzer:
         self._set_onset_offset_flags(last_event)
 
     def _add_diffs_in_beats(self, event: dict, beat_secs: float) -> None:
+        """Convert onset and offset timing differences from seconds to beats.
+
+        Differences are divided by the duration of one beat. Missing timing
+        differences are ignored.
+
+        Args:
+            event: Score event whose rhythm information is updated.
+            beat_secs: Duration of one beat in seconds.
+        """
+
         if event["rhythm"]["onset_diff_secs"] != None:
             event["rhythm"]["onset_diff_beats"] = (
                 event["rhythm"]["onset_diff_secs"] / beat_secs
@@ -567,6 +925,17 @@ class RhythmAnalyzer:
             )
 
     def _set_onset_offset_flags(self, event) -> None:
+        """Assign rhythm accuracy flags to an event's onset and offset.
+
+        The absolute onset and offset timing differences are compared against
+        their respective tolerances. Differences below the tolerance are
+        classified as ``perfect``, differences below twice the tolerance as
+        ``okay``, and larger differences as ``wrong``.
+
+        Args:
+            event: Score event whose onset and offset flags are updated.
+        """
+
         # set onset flag
         if event["rhythm"]["onset_diff_secs"] != None:
             if abs(event["rhythm"]["onset_diff_secs"]) < self.ONSET_TOLERANCE_BEATS:
@@ -591,6 +960,13 @@ class RhythmAnalyzer:
                 event["rhythm"]["offset_diff_flag"] = "wrong"
 
     def _update_score_events(self) -> None:
+        """Initialize rhythm analysis fields for all score events.
+
+        Each event receives a ``rhythm`` dictionary containing onset and offset
+        differences in seconds and beats, together with their corresponding
+        accuracy flags.
+        """
+
         for event in self.score_events:
             event.setdefault("rhythm", {}).update(
                 {
@@ -605,3 +981,7 @@ class RhythmAnalyzer:
             )
 
     def _validate(self): ...
+
+    """TODO:
+    Validate the rhythm analyzer input data.
+    """
