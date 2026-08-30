@@ -5,3 +5,5 @@
 *.zip
 /input
 /output
+/docs/_build
+/docs/api
