@@ -9,13 +9,32 @@ import json
 # TODO intonation tendency flag
 @dataclass
 class Output:
+    """Present and visualize analyzed score event results.
+
+    The class provides utilities for printing raw score event data, exporting
+    selected timing information as JSON, displaying formatted rhythm and
+    intonation results in the command line, and rendering a graphical summary
+    of the performance.
+
+    Attributes:
+        score_events: Score events containing analyzed rhythm, intonation,
+            pitch, and score information.
+    """
+
     score_events: list[dict]
 
     def print_score_events(self):
+        """Print all score events in their raw dictionary representation."""
+
         for event in self.score_events:
             print(event)
 
     def print_rhythm_json(self):
+        """Print score event timing information as formatted JSON.
+
+        The output contains the expected start and end times of each score event.
+        """
+
         output = []
 
         for event in self.score_events:
@@ -29,6 +48,13 @@ class Output:
         print(json.dumps(output, indent=2))
 
     def print_cli_output(self):
+        """Print formatted rhythm and intonation analysis results to the command line.
+
+        For each note event, the output includes measure and note information,
+        onset and offset timing differences, rhythm evaluation flags, and
+        section-level intonation ratios and overall evaluations.
+        """
+
         for i in range(len(self.score_events)):
             if self.score_events[i]["kind"] != "note":
                 continue
@@ -122,6 +148,18 @@ class Output:
             print() if i < len(self.score_events) - 1 else None
 
     def render_and_save_graph_output(self, save=True, show=True):
+        """Render and optionally save a graph of rhythm and intonation results.
+
+        The graph compares the performed pitch with the reference pitch over time
+        expressed in beats. Intonation accuracy is represented using color-coded
+        line segments, while rhythm onsets and offsets are shown as separate
+        markers.
+
+        Args:
+            save: Whether to save the rendered graph as a PNG file.
+            show: Whether to display the rendered graph.
+        """
+
         y_vals_intonation = []
         y_vals_reference = []
         x_vals_beats = []
@@ -336,7 +374,20 @@ class Output:
         self,
         event,
     ) -> tuple[tuple[float, float], tuple[float, float]] | tuple[None, None]:
-        print(event)
+        """Return graph coordinates for an event's performed onset and offset.
+
+        Expected onset and offset positions in beats are adjusted by their detected
+        rhythm differences. The event's expected MIDI pitch is used as the vertical
+        coordinate for both points.
+
+        Args:
+            event: Score event containing rhythm, timing, and pitch information.
+
+        Returns:
+            A tuple containing the onset and offset graph coordinates. Returns
+            ``(None, None)`` if the required rhythm or score timing information
+            is unavailable.
+        """
 
         if (
             event["rhythm"]["onset_diff_beats"] == None
@@ -357,4 +408,8 @@ class Output:
             ),
         )
 
-    def _validate(self): ...
+    def _validate(self):
+        """TODO:
+        Validate the output data before printing or rendering results.
+        """
+        ...
