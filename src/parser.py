@@ -2,6 +2,30 @@ import argparse
 
 
 def parse_args():
+    """Parse command-line arguments for performance analysis.
+
+    The parser accepts paths to the audio recording and MusicXML score together
+    with musical parameters, score range options, and output configuration
+    flags.
+
+    Returns:
+        Parsed command-line arguments containing:
+            audio: Path to the audio recording file.
+            musicxml: Path to the MusicXML sheet music file.
+            part_idx: Zero-based index of the score part to analyze.
+            bpm: Tempo of the recording in beats per minute.
+            time_signature: Time signature numerator and denominator.
+            start_msr: One-based index of the first measure to analyze.
+            end_msr: One-based index of the last measure to analyze.
+            start_offset: Offset from the beginning of the start measure in beats.
+            end_offset: Offset from the beginning of the end measure in beats.
+            audacity_json: Whether to print timing information for the Audacity script.
+            no_show_graph: Whether graph display is disabled.
+            no_save_graph: Whether graph saving is disabled.
+            no_cli_output: Whether formatted CLI output is disabled.
+            rms_graph: Whether to show and save the RMS debugging graph.
+    """
+
     parser = argparse.ArgumentParser()
     parser.add_argument("audio", help="Path to audio recording file")
     parser.add_argument("musicxml", help="Path to MusicXML sheet music file")
