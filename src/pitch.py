@@ -10,40 +10,17 @@ from src.audio import Audio
 # TODO look into resolution parameter in librosa.pyin() function
 @dataclass
 class PitchExtractor:
-    """
-    Extracts pitch estimates and their corresponding timestamps from an audio file.
+    """Extract pitch, voicing, RMS, and timing information from an audio segment.
 
-    The extractor can optionally process only a selected time range of the audio,
-    defined by start_sec and end_sec. It uses librosa.pyin to estimate the
-    fundamental frequency and filters out frames that are likely to be silence,
-    unvoiced, or unreliable.
+    The extractor loads a selected time interval from an audio file and analyzes
+    it frame by frame. Fundamental frequency and voicing information are estimated
+    using ``librosa.pyin``, while RMS values are calculated for the same audio
+    segment.
 
     Attributes:
-        audio:
-            Audio object containing at least the path to the audio file.
-
-        start_sec:
-            Start time in seconds from which pitch extraction should begin.
-            If None, extraction starts at the beginning of the audio.
-
-        end_sec:
-            End time in seconds where pitch extraction should stop.
-            If None, extraction should continue until the end of the selected audio.
-            Currently, this value is converted to a duration internally.
-
-    Class Attributes:
-        FRAME_LENGTH:
-            Number of samples used in each analysis frame.
-
-        HOP_LENGTH:
-            Number of samples between consecutive analysis frames.
-
-        VOICED_PROB_THRESHOLD:
-            Minimum voiced probability required for a frame to be kept.
-
-        RMS_DB_THRESHOLD:
-            Minimum RMS level in decibels required for a frame to be kept.
-            Frames below this threshold are treated as too quiet.
+        audio: Audio object containing the path to the audio file.
+        start_sec: Start time of the analyzed segment in seconds.
+        end_sec: End time of the analyzed segment in seconds.
     """
 
     audio: Audio
@@ -55,43 +32,24 @@ class PitchExtractor:
     RESOLUTION = 0.05
 
     def __post_init__(self):
+        """Validate the extractor parameters after initialization."""
         self._validate()
 
     def extract_pitches_and_times(
         self,
     ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray], np.ndarray, np.ndarray]:
-        """
-        Extracts pitches and their timestamps from the audio file.
+        """Extract pitch, voicing, RMS, and corresponding time values.
 
-        The audio is loaded from start_sec to end_sec, converted to mono,
-        and analyzed using librosa.pyin. The extracted pitch frames are then
-        filtered using three criteria:
+        The selected audio segment is loaded in mono and analyzed using
+        ``librosa.pyin``. RMS values are calculated using the same frame and hop
+        configuration, and timestamps are shifted by ``start_sec`` so that they
+        correspond to positions in the original audio.
 
-            - the frame must be marked as voiced
-            - the voiced probability must be above VOICED_PROB_THRESHOLD
-            - the RMS level must be above RMS_DB_THRESHOLD
-
-        Args:
-            get_midi:
-                If True, returns pitch values in fracional MIDI.
-                If False, converts the detected pitches to note names,
-                for example "A4" instead of 69.0 Hz.
-
-        Returns:
-            A tuple containing:
-
-                pitches:
-                    A NumPy array of pitch values. These are either MIDI values
-                    or note names, depending on get_midi.
-
-                pitch_times:
-                    A NumPy array of timestamps in seconds. Each timestamp
-                    corresponds to one pitch value.
-
-        Raises:
-            ValueError:
-                Should be raised by _validate_measure_range if the selected
-                time range is invalid.
+        Returns: A tuple containing:
+            - A tuple of fundamental frequencies in Hertz, voiced flags, and
+              voiced probabilities.
+            - An array of RMS values.
+            - An array of corresponding frame times in seconds.
         """
 
         dur = self.end_sec - self.start_sec
@@ -118,6 +76,12 @@ class PitchExtractor:
         return (f0, voiced_flag, voiced_prob), rms, times
 
     def _validate(self):
+        """Validate the selected audio time range.
+
+        Raises:
+            ValueError: If ``start_sec`` or ``end_sec`` is negative, or if
+            ``end_sec`` is not greater than ``start_sec``.
+        """
         if self.start_sec < 0:
             raise ValueError("Start_sec must be bigger than 0")
 
@@ -128,31 +92,19 @@ class PitchExtractor:
             raise ValueError("Duration cant be less or equal to 0")
 
     def _extract_f0(self, y, sr: int):
-        """
-        Estimates the fundamental frequency of the audio signal.
+        """Estimate fundamental frequency and voicing information.
 
-        Uses librosa.pyin to estimate pitch frame by frame. The pitch range is
-        limited to the approximate range of the violin, from G3 to E7.
+        Uses ``librosa.pyin`` to analyze the audio signal within the approximate
+        violin pitch range from G3 to E7.
 
         Args:
-            y:
-                Audio signal as a NumPy array.
+            y: Audio signal samples.
+            sr: Sample rate of the audio signal.
 
-            sr:
-                Sample rate of the audio signal.
-
-        Returns:
-            A tuple containing:
-
-                f0:
-                    Estimated fundamental frequency for each frame in Hertz.
-                    Unvoiced frames may contain NaN values.
-
-                voiced_flag:
-                    Boolean array indicating whether each frame is considered voiced.
-
-                voiced_prob:
-                    Probability array indicating the confidence that each frame is voiced.
+        Returns: A tuple containing:
+            - Estimated fundamental frequencies in Hertz.
+            - Boolean voiced flags for individual frames.
+            - Voiced probabilities for individual frames.
         """
         f0, voiced_flag, voiced_prob = librosa.pyin(
             y,
@@ -169,6 +121,22 @@ class PitchExtractor:
 
 @dataclass
 class VoicedPitchFilter:
+    """Filter unreliable pitch frames based on voicing information.
+
+    The filter removes pitch frames that are unvoiced, contain invalid
+    fundamental frequency values, or have insufficient voiced probability.
+
+    Attributes:
+        f0: Array of estimated fundamental frequencies in Hertz.
+        voiced_flags: Boolean array indicating whether individual frames are voiced.
+        voiced_probs: Array containing voiced probabilities for individual frames.
+        times: Array of timestamps in seconds corresponding to the pitch frames.
+        rms: Array of RMS values corresponding to the pitch frames.
+
+    TODO:
+        remove rms attribute, not necessary
+    """
+
     f0: np.ndarray
     voiced_flags: np.ndarray
     voiced_probs: np.ndarray
@@ -179,25 +147,23 @@ class VoicedPitchFilter:
     VOICED_PROB_THRESHOLD = 0.8
 
     def __post_init__(self):
+        """Validate the filter parameters after initialization."""
+
         self._validate()
 
     def filter_frames(self) -> tuple[np.ndarray, np.ndarray]:
-        """
-        Removes unreliable pitch frames.
+        """Filter unreliable pitch frames.
 
-        A frame is kept only if it is voiced, has a valid f0 value, has a voiced
-        probability above VOICED_PROB_THRESHOLD, and is loud enough according to
-        RMS_THRESHOLD.
+        A frame is retained only when it is marked as voiced, its fundamental
+        frequency is not NaN, and its voiced probability is greater than
+        ``VOICED_PROB_THRESHOLD``.
 
         Returns:
             A tuple containing:
-
-                pitches:
-                    Filtered pitch values in Hertz.
-
-                pitch_times:
-                    Timestamps corresponding to the filtered pitch values.
+                - Filtered fundamental frequency values in Hertz.
+                - Timestamps in seconds corresponding to the filtered values.
         """
+
         mask = (
             (self.voiced_flags == True)
             & ~np.isnan(self.f0)
@@ -213,6 +179,13 @@ class VoicedPitchFilter:
         return pitches, pitch_times
 
     def _validate(self):
+        """Validate the input arrays.
+
+        Raises:
+            ValueError: If ``f0``, ``voiced_flags``, ``voiced_probs``, ``times``,
+                and ``rms`` do not have the same number of elements.
+        """
+
         if (
             self.f0.size != self.voiced_flags.size
             or self.voiced_flags.size != self.voiced_probs.size

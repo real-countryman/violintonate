@@ -7,78 +7,20 @@ from bisect import bisect_left
 
 @dataclass
 class ScoreTimeMapper:
-    """
-    Converts score positions, expressed as measure numbers and quarter-length offsets,
-    into audio time in seconds.
+    """Map score positions in quarter lengths to corresponding audio times.
 
-    The class uses BPM together with a beat unit to determine how score durations
-    map to real time.
-
-    If bpm_beat_ql is not provided, it is chosen automatically from the denominator
-    of the time signature. This means the default BPM beat follows the written beat
-    unit of the meter.
-
-    Examples:
-        4/4 with bpm_beat_ql=None:
-            BPM counts quarter notes.
-            bpm_beat_ql = 1.0
-
-        6/8 with bpm_beat_ql=None:
-            BPM counts eighth notes.
-            bpm_beat_ql = 0.5
-
-        6/8 with bpm_beat_ql=1.5:
-            BPM counts dotted quarter notes.
-            This represents two large dotted-quarter beats per bar.
+    The mapper uses tempo and time signature information to convert score
+    positions into seconds. It can determine the selected score range, crop
+    score events to that range, add timing information to events, and calculate
+    audio bounds including a one-bar count-in and end padding.
 
     Attributes:
-        bpm:
-            Tempo value in beats per minute.
-
-            The meaning of one BPM beat is defined by bpm_beat_ql.
-            For example, bpm=120 with bpm_beat_ql=1.0 means:
-            quarter note = 120 BPM.
-
-        time_signature:
-            Tuple in the form (numerator, denominator), for example (4, 4),
-            (3, 4), (6, 8), or (2, 2).
-
-            The denominator is also used to choose the default bpm_beat_ql
-            when bpm_beat_ql is not provided.
-
-        start_msr:
-            Zero-based start measure index.
-
-            For example, start_msr=0 means the first measure.
-
-        start_offset:
-            Offset inside the start measure, expressed in quarter lengths.
-
-            For example:
-                - 0.0 means the beginning of the measure
-                - 1.0 means one quarter note after the beginning
-                - 0.5 means one eighth note after the beginning
-
-        end_msr:
-            Zero-based end measure index.
-
-            For example, end_msr=4 means the fifth measure.
-
-        end_offset:
-            Offset inside the end measure, expressed in quarter lengths.
-
-        bpm_beat_ql:
-            Optional length of one BPM beat, expressed in quarter lengths.
-
-            If None, the value is calculated automatically as:
-
-                bpm_beat_ql = 4 / denominator
-
-            Examples:
-                - quarter note beat: bpm_beat_ql = 1.0
-                - eighth note beat: bpm_beat_ql = 0.5
-                - dotted quarter beat: bpm_beat_ql = 1.5
-                - half note beat: bpm_beat_ql = 2.0
+        bpm: Tempo in beats per minute.
+        time_signature: Time signature represented as a numerator and denominator.
+        start_msr: Zero-based index of the first selected measure.
+        start_offset: Offset within the start measure in quarter lengths.
+        end_msr: Zero-based index of the end measure.
+        end_offset: Offset within the end measure in quarter lengths.
     """
 
     bpm: float
@@ -89,9 +31,21 @@ class ScoreTimeMapper:
     end_offset: float
 
     def __post_init__(self):
+        """Validate the mapper parameters after initialization."""
+
         self._validate()
 
     def get_seconds_start_end_score_events(self) -> tuple[float, float]:
+        """Return the start and end times of the selected score section.
+
+        The selected measure positions are first converted to quarter lengths and
+        then mapped to time in seconds. The score section is positioned after one
+        bar reserved for the count-in.
+
+        Returns:
+            A tuple containing the score section start and end times in seconds.
+        """
+
         start_ql, end_ql = self.get_start_end_in_quarter_lengths()
 
         start_sec = self.get_seconds_per_bar() + self.start_offset
@@ -102,6 +56,19 @@ class ScoreTimeMapper:
         return start_sec, end_sec
 
     def get_audio_bounds_with_count_in_and_end_padding(self) -> tuple[float, float]:
+        """Return audio bounds including count-in and end padding.
+
+        The audio starts one full bar before the selected score section to include
+        the count-in. One additional beat is added after the score section.
+
+        Returns:
+            A tuple containing the audio start and end times in seconds.
+
+        Raises:
+            ValueError: If there is not enough time before the score section for
+                a complete one-bar count-in.
+        """
+
         start_score_sec, end_sec = self.get_seconds_start_end_score_events()
         start_sec = start_score_sec - self.get_seconds_per_bar()
 
@@ -113,6 +80,13 @@ class ScoreTimeMapper:
         return start_sec, end_sec + one_beat
 
     def get_start_end_in_quarter_lengths(self) -> tuple[float, float]:
+        """Convert the selected measure range to quarter-length positions.
+
+        Returns:
+            A tuple containing the absolute start and end positions in quarter
+            lengths.
+        """
+
         start = self._measure_offset_to_quarter_length(
             self.start_msr,
             self.start_offset,
@@ -125,6 +99,18 @@ class ScoreTimeMapper:
         return start, end
 
     def crop_score_events(self, score_events: list[dict]) -> list[dict]:
+        """Crop score events to the selected score range.
+
+        Events are selected according to their start positions in quarter lengths.
+        The start boundary is inclusive and the end boundary is exclusive.
+
+        Args:
+            score_events: Score events containing ``start_quarter_length`` values.
+
+        Returns:
+            A list containing the score events within the selected range.
+        """
+
         start_ql, end_ql = self.get_start_end_in_quarter_lengths()
 
         start_times = [event["start_quarter_length"] for event in score_events]
@@ -135,19 +121,20 @@ class ScoreTimeMapper:
         return score_events[start_idx:end_idx]
 
     def score_events_add_times(self, score_events: list[dict]) -> list[dict]:
-        """
-        Adds start_sec and end_sec to each score event in place.
-        start_sec starts from zero, relative to the audio and assumes
-        the first measure of the audio is a beat countdown.
+        """Add start and end times in seconds to score events.
+
+        Timing is calculated relative to the first supplied score event. One bar
+        is added before the first event to represent the audio count-in. The input
+        event dictionaries are modified in place.
 
         Args:
-            score_events:
-                List of score event dictionaries. Each event must contain
-                "start_quarter_length" and "end_quarter_length".
+            score_events: Score events containing ``start_quarter_length`` and
+                ``end_quarter_length`` values.
 
         Returns:
-            The same mutated list, with each event modified in place.
+            The same list of score events with ``start_sec`` and ``end_sec`` added.
         """
+
         start_ql = score_events[0]["start_quarter_length"]
         countdown = self.get_seconds_per_bar()
 
@@ -166,27 +153,82 @@ class ScoreTimeMapper:
         return score_events
 
     def get_seconds_per_bar(self):
+        """Return the duration of one bar in seconds.
+
+        Returns:
+            Duration of one complete measure in seconds according to the configured
+            tempo and time signature.
+        """
+
         ql_per_bar = self._quarter_lengths_per_bar()
         secs_per_bar = self._quarter_length_to_seconds(ql_per_bar)
 
         return secs_per_bar
 
     def get_seconds_per_beat(self):
+        """Return the duration of one notated beat in seconds.
+
+        The duration of one bar is divided by the numerator of the time signature.
+
+        Returns:
+            Duration of one beat in seconds.
+        """
+
         return self.get_seconds_per_bar() / self.time_signature[0]
 
     def _quarter_length_to_seconds(self, ql: float) -> float:
+        """Convert a duration in quarter lengths to seconds.
+
+        Args:
+            ql: Duration or position expressed in quarter lengths.
+
+        Returns:
+            Corresponding duration in seconds.
+        """
+
         denominator = self.time_signature[1]
         return ql * 60 / self.bpm * denominator / 4
 
     def _measure_offset_to_quarter_length(self, measure: int, offset: float) -> float:
+        """Convert a measure and offset to an absolute quarter-length position.
+
+        Args:
+            measure: Zero-based measure index.
+            offset: Offset within the measure in quarter lengths.
+
+        Returns:
+            Absolute score position in quarter lengths.
+        """
+
         return measure * self._quarter_lengths_per_bar() + offset
 
     def _quarter_lengths_per_bar(self) -> float:
+        """Return the number of quarter lengths in one bar.
+
+        The value is calculated from the numerator and denominator of the configured
+        time signature.
+
+        Returns:
+            Length of one complete measure in quarter lengths.
+        """
+
         numerator, denominator = self.time_signature
         return numerator * (4 / denominator)
 
     # TODO
     def _validate(self):
+        """Validate tempo, time signature, and score range parameters.
+
+        TODO:
+            Validate that offsets do not exceed the corresponding measure length.
+            Validate that the selected end position occurs after the start position.
+
+        Raises:
+            ValueError: If BPM is not positive, the time signature has an invalid
+                format or contains non-positive values, or any measure index or
+                offset is negative.
+        """
+
         if self.bpm <= 0:
             raise ValueError("Bpm must be bigger than 0")
 
@@ -218,10 +260,32 @@ class ScoreTimeMapper:
 
 @dataclass
 class MusicxmlParser:
+    """Parse score events from a MusicXML file.
+
+    The parser loads a MusicXML score, selects one part, and extracts notes,
+    chords, and rests together with their measure, pitch, and timing
+    information expressed in quarter lengths.
+
+    Attributes:
+        path: Path to the MusicXML file.
+        part_idx: Zero-based index of the score part to extract.
+    TODO:
+        make a __post_init__() function that calls _validate() to make it
+        cleaner
+    """
+
     path: str
     part_idx: int = 0
 
     def _validate(self):
+        """Validate the MusicXML file and selected score part.
+
+        Raises:
+            FileNotFoundError: If the MusicXML file does not exist.
+            ValueError: If the MusicXML score contains no parts.
+            IndexError: If ``part_idx`` is outside the available part range.
+        """
+
         path = Path(self.path)
 
         if not path.exists():
@@ -239,6 +303,27 @@ class MusicxmlParser:
             )
 
     def extract_score_events(self):
+        """Extract notes, chords, and rests from the selected MusicXML part.
+
+        Each score element is converted into a dictionary containing its type,
+        measure number, pitch information, and timing values in quarter lengths.
+
+        Returns:
+            A list of dictionaries containing:
+                - Event type: ``note``, ``chord``, or ``rest``.
+                - Measure number.
+                - Pitch names with octave information.
+                - MIDI pitch values.
+                - Start position in quarter lengths.
+                - Duration in quarter lengths.
+                - End position in quarter lengths.
+
+        Raises:
+            FileNotFoundError: If the MusicXML file does not exist.
+            ValueError: If the MusicXML score contains no parts.
+            IndexError: If ``part_idx`` is outside the available part range.
+        """
+
         self._validate()
         score = converter.parse(self.path, format="musicxml")
 
