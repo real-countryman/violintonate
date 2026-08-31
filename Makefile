@@ -24,7 +24,7 @@ help:
 	@echo "  make run"
 	@echo "      Set up the virtual environment, then run main.py."
 	@echo ""
-	@echo "  make run ARGS=\"foo bar --debug\""
+	@echo "  make run ARGS=\"--help\""
 	@echo "      Pass arguments to main.py."
 	@echo ""
 	@echo "  make audacity ARGS=\"times_json_path violin_audio_path output_aup3_path\""
