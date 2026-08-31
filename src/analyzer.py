@@ -225,6 +225,8 @@ class RmsOnsetOffsetDetector:
         """
 
         y = np.asarray(y)
+        if len(y) == 0:
+            return None, None
 
         # if values always decreasing
         if y[-1] == min(y):
@@ -261,6 +263,8 @@ class RmsOnsetOffsetDetector:
         """
 
         y = np.asarray(y)
+        if y.size == 0:
+            return None, None
 
         # if values always decreasing
         if y[-1] == min(y):
@@ -555,6 +559,11 @@ class IntonationAnalyzer:
 
         for event in self.score_events:
             if event["kind"] != "note":
+                continue
+            if (
+                event["rhythm"]["onset_diff_secs"] == None
+                or event["rhythm"]["offset_diff_secs"] == None
+            ):
                 continue
 
             # TODO exception, no onset / offset, make a helper function
@@ -948,7 +957,7 @@ class RhythmAnalyzer:
                 event["rhythm"]["onset_diff_flag"] = "wrong"
 
         # set offset flag
-        if abs(event["rhythm"]["offset_diff_secs"]) != None:
+        if event["rhythm"]["offset_diff_secs"] != None:
             if abs(event["rhythm"]["offset_diff_secs"]) < self.OFFSET_TOLERANCE_BEATS:
                 event["rhythm"]["offset_diff_flag"] = "perfect"
             elif (
