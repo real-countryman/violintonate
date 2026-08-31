@@ -38,12 +38,18 @@ class Output:
         output = []
 
         for event in self.score_events:
-            output.append(
-                {
-                    "start_sec": event["start_sec"],
-                    "end_sec": event["end_sec"],
-                }
-            )
+            if (
+                event["rhythm"]["onset_diff_secs"] != None
+                and event["rhythm"]["offset_diff_secs"] != None
+            ):
+                output.append(
+                    {
+                        "start_sec": event["start_sec"]
+                        + event["rhythm"]["onset_diff_secs"],
+                        "end_sec": event["end_sec"]
+                        + event["rhythm"]["offset_diff_secs"],
+                    }
+                )
 
         print(json.dumps(output, indent=2))
 
