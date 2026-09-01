@@ -86,8 +86,8 @@ class ScoreTimeMapper:
         """
 
         audio_start_ql = self.score_start_ql - self._quarter_lengths_per_bar()
-        one_beat = 1
-        audio_end_ql = self.score_end_ql + one_beat
+        one_ql = 1
+        audio_end_ql = self.score_end_ql + one_ql
 
         if audio_end_ql <= audio_start_ql:
             raise ValueError("start_sec > end_sec")
