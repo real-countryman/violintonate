@@ -69,8 +69,7 @@ class ScoreTimeMapper:
                 a complete one-bar count-in.
         """
 
-        start_score_sec, end_sec = self.get_seconds_start_end_score_events()
-        start_sec = start_score_sec - self.get_seconds_per_bar()
+        start_sec, end_sec = self.get_seconds_start_end_score_events()
 
         if start_sec < 0:
             raise ValueError("Count in is too short!")
