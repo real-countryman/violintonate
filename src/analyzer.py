@@ -891,8 +891,8 @@ class RhythmAnalyzer:
                         next_event["rms"]["rms_onset_time"] - next_event["start_sec"]
                     )
 
-            self._set_onset_offset_flags(cur_event)
             self._add_diffs_in_beats(cur_event, beat_secs)
+            self._set_onset_offset_flags(cur_event)
 
         last_event = self.score_events[-1]
 
@@ -910,8 +910,8 @@ class RhythmAnalyzer:
                 last_event["rms"]["rms_offset_time"] - last_event["end_sec"]
             )
 
-        self._set_onset_offset_flags(last_event)
         self._add_diffs_in_beats(last_event, beat_secs)
+        self._set_onset_offset_flags(last_event)
 
     def _add_diffs_in_beats(self, event: dict, beat_secs: float) -> None:
         """Convert onset and offset timing differences from seconds to beats.
@@ -947,22 +947,23 @@ class RhythmAnalyzer:
         """
 
         # set onset flag
-        if event["rhythm"]["onset_diff_secs"] != None:
-            if abs(event["rhythm"]["onset_diff_secs"]) < self.ONSET_TOLERANCE_BEATS:
+        if event["rhythm"]["onset_diff_beats"] != None:
+            if abs(event["rhythm"]["onset_diff_beats"]) < self.ONSET_TOLERANCE_BEATS:
                 event["rhythm"]["onset_diff_flag"] = "perfect"
             elif (
-                abs(event["rhythm"]["onset_diff_secs"]) < 2 * self.ONSET_TOLERANCE_BEATS
+                abs(event["rhythm"]["onset_diff_beats"])
+                < 2 * self.ONSET_TOLERANCE_BEATS
             ):
                 event["rhythm"]["onset_diff_flag"] = "okay"
             else:
                 event["rhythm"]["onset_diff_flag"] = "wrong"
 
         # set offset flag
-        if event["rhythm"]["offset_diff_secs"] != None:
-            if abs(event["rhythm"]["offset_diff_secs"]) < self.OFFSET_TOLERANCE_BEATS:
+        if event["rhythm"]["offset_diff_beats"] != None:
+            if abs(event["rhythm"]["offset_diff_beats"]) < self.OFFSET_TOLERANCE_BEATS:
                 event["rhythm"]["offset_diff_flag"] = "perfect"
             elif (
-                abs(event["rhythm"]["offset_diff_secs"])
+                abs(event["rhythm"]["offset_diff_beats"])
                 < 2 * self.OFFSET_TOLERANCE_BEATS
             ):
                 event["rhythm"]["offset_diff_flag"] = "okay"
