@@ -27,6 +27,7 @@ def main():
         start_offset=args.start_offset,
         end_msr=end_msr,
         end_offset=args.end_offset,
+        score_events=score_events,
     )
 
     score_events = time_mapper.crop_score_events(score_events)

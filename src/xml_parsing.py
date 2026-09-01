@@ -29,73 +29,39 @@ class ScoreTimeMapper:
     start_offset: float
     end_msr: int
     end_offset: float
+    score_events: list[dict]
+
+    score_start_ql = -1
+    score_end_ql = -1
 
     def __post_init__(self):
         """Validate the mapper parameters after initialization."""
-
         self._validate()
 
-    def get_seconds_start_end_score_events(self) -> tuple[float, float]:
-        """Return the start and end times of the selected score section.
-
-        The selected measure positions are first converted to quarter lengths and
-        then mapped to time in seconds. The score section is positioned after one
-        bar reserved for the count-in.
-
-        Returns:
-            A tuple containing the score section start and end times in seconds.
-        """
-
-        start_ql, end_ql = self.get_start_end_in_quarter_lengths()
-
-        start_sec = self.get_seconds_per_bar() + self.start_offset
-
-        section_duration_ql = end_ql - start_ql
-        end_sec = start_sec + self._quarter_length_to_seconds(section_duration_ql)
-
-        return start_sec, end_sec
+    def _set_score_start_end_ql(self):
+        self.score_start_ql = (
+            self.score_events[0]["start_quarter_length"] + self.start_offset
+        )
+        self.score_end_ql = (
+            self.score_events[-1]["end_quarter_length"] + self.end_offset
+        )
 
     def get_audio_bounds_with_count_in_and_end_padding(self) -> tuple[float, float]:
-        """Return audio bounds including count-in and end padding.
+        """ """
 
-        The audio starts one full bar before the selected score section to include
-        the count-in. One additional beat is added after the score section.
+        audio_start_ql = self.score_start_ql - self._quarter_lengths_per_bar()
+        one_beat = 1
+        audio_end_ql = self.score_end_ql + one_beat
 
-        Returns:
-            A tuple containing the audio start and end times in seconds.
+        if audio_end_ql <= audio_start_ql:
+            raise ValueError("start_sec > end_sec")
 
-        Raises:
-            ValueError: If there is not enough time before the score section for
-                a complete one-bar count-in.
-        """
+        relative_start_ql = self._quarter_lengths_per_bar()
+        relative_end_ql = audio_end_ql - audio_start_ql
 
-        start_sec, end_sec = self.get_seconds_start_end_score_events()
-
-        if start_sec < 0:
-            raise ValueError("Count in is too short!")
-
-        one_beat = self.get_seconds_per_bar() / self.time_signature[0]
-
-        return start_sec, end_sec + one_beat
-
-    def get_start_end_in_quarter_lengths(self) -> tuple[float, float]:
-        """Convert the selected measure range to quarter-length positions.
-
-        Returns:
-            A tuple containing the absolute start and end positions in quarter
-            lengths.
-        """
-
-        start = self._measure_offset_to_quarter_length(
-            self.start_msr,
-            self.start_offset,
-        )
-        end = self._measure_offset_to_quarter_length(
-            self.end_msr,
-            self.end_offset,
-        )
-
-        return start, end
+        return self._quarter_length_to_seconds(
+            relative_start_ql
+        ), self._quarter_length_to_seconds(relative_end_ql)
 
     def crop_score_events(self, score_events: list[dict]) -> list[dict]:
         """Crop score events to the selected score range.
@@ -110,12 +76,17 @@ class ScoreTimeMapper:
             A list containing the score events within the selected range.
         """
 
-        start_ql, end_ql = self.get_start_end_in_quarter_lengths()
+        self.score_start_ql = self._get_ql_at_msr_and_offset(
+            self.start_msr, self.start_offset
+        )
+        self.score_end_ql = self._get_ql_at_msr_and_offset(
+            self.end_msr, self.end_offset
+        )
 
         start_times = [event["start_quarter_length"] for event in score_events]
 
-        start_idx = bisect_left(start_times, start_ql)
-        end_idx = bisect_left(start_times, end_ql)
+        start_idx = bisect_left(start_times, self.score_start_ql)
+        end_idx = bisect_left(start_times, self.score_end_ql)
 
         return score_events[start_idx:end_idx]
 
@@ -135,7 +106,7 @@ class ScoreTimeMapper:
         """
 
         start_ql = score_events[0]["start_quarter_length"]
-        countdown = self.get_seconds_per_bar()
+        countdown = self._quarter_length_to_seconds(self._quarter_lengths_per_bar())
 
         for event in score_events:
             event["start_sec"] = float(
@@ -151,29 +122,8 @@ class ScoreTimeMapper:
 
         return score_events
 
-    def get_seconds_per_bar(self):
-        """Return the duration of one bar in seconds.
-
-        Returns:
-            Duration of one complete measure in seconds according to the configured
-            tempo and time signature.
-        """
-
-        ql_per_bar = self._quarter_lengths_per_bar()
-        secs_per_bar = self._quarter_length_to_seconds(ql_per_bar)
-
-        return secs_per_bar
-
     def get_seconds_per_beat(self):
-        """Return the duration of one notated beat in seconds.
-
-        The duration of one bar is divided by the numerator of the time signature.
-
-        Returns:
-            Duration of one beat in seconds.
-        """
-
-        return self.get_seconds_per_bar() / self.time_signature[0]
+        return 60 / self.bpm
 
     def _quarter_length_to_seconds(self, ql: float) -> float:
         """Convert a duration in quarter lengths to seconds.
@@ -188,19 +138,6 @@ class ScoreTimeMapper:
         denominator = self.time_signature[1]
         return ql * 60 / self.bpm * denominator / 4
 
-    def _measure_offset_to_quarter_length(self, measure: int, offset: float) -> float:
-        """Convert a measure and offset to an absolute quarter-length position.
-
-        Args:
-            measure: Zero-based measure index.
-            offset: Offset within the measure in quarter lengths.
-
-        Returns:
-            Absolute score position in quarter lengths.
-        """
-
-        return measure * self._quarter_lengths_per_bar() + offset
-
     def _quarter_lengths_per_bar(self) -> float:
         """Return the number of quarter lengths in one bar.
 
@@ -213,6 +150,9 @@ class ScoreTimeMapper:
 
         numerator, denominator = self.time_signature
         return numerator * (4 / denominator)
+
+    def _get_ql_at_msr_and_offset(self, msr: int, offset: float):
+        return msr * self._quarter_lengths_per_bar() + offset
 
     # TODO
     def _validate(self):
