@@ -144,7 +144,7 @@ class VoicedPitchFilter:
     rms: np.ndarray
 
     # May need tweaking
-    VOICED_PROB_THRESHOLD = 0.8
+    VOICED_PROB_THRESHOLD = 0.5
 
     def __post_init__(self):
         """Validate the filter parameters after initialization."""
