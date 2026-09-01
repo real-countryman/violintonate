@@ -911,6 +911,7 @@ class RhythmAnalyzer:
             )
 
         self._set_onset_offset_flags(last_event)
+        self._add_diffs_in_beats(last_event, beat_secs)
 
     def _add_diffs_in_beats(self, event: dict, beat_secs: float) -> None:
         """Convert onset and offset timing differences from seconds to beats.
