@@ -91,6 +91,8 @@ def main():
     output = Output(score_events)
     if args.audacity_json:
         output.print_rhythm_json()
+    if args.audacity_json_rms:
+        output.print_rms_rhythm_json()
     if not args.no_cli_output:
         output.print_cli_output()
 

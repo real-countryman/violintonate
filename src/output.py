@@ -53,6 +53,27 @@ class Output:
 
         print(json.dumps(output, indent=2))
 
+    def print_rms_rhythm_json(self):
+        output = []
+
+        for event in self.score_events:
+            if (
+                event["rms"]["rms_onset_time"] != None
+                and event["rms"]["rms_offset_time"] != None
+            ):
+                output.append(
+                    {
+                        "start_sec": event["start_sec"]
+                        + event["rms"]["rms_onset_time"]
+                        - event["start_sec"],
+                        "end_sec": event["start_sec"]
+                        + event["rms"]["rms_offset_time"]
+                        - event["start_sec"],
+                    }
+                )
+
+        print(json.dumps(output, indent=2))
+
     def print_cli_output(self):
         """Print formatted rhythm and intonation analysis results to the command line.
 

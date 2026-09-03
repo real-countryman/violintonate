@@ -98,5 +98,10 @@ def parse_args():
         action="store_true",
         help="Shows and saves RMS graph of the interpretation. Used mainly for debugging.",
     )
+    parser.add_argument(
+        "--audacity_json_rms",
+        action="store_true",
+        help="Prints json with onset secs and offset secs for audacity script based on rms only.",
+    )
 
     return parser.parse_args()
