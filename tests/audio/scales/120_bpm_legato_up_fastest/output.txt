@@ -1,0 +1,329 @@
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            G3
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.01         -0.11
+Beats difference: :         +0.02         -0.23
+Evaluation:       :       perfect         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :    Undetected    Undetected    Undetected    Undetected
+Middle            :    Undetected    Undetected    Undetected    Undetected
+End               :    Undetected    Undetected    Undetected    Undetected
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            A3
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         -0.11         -0.03
+Beats difference: :         -0.23         -0.05
+Evaluation:       :         wrong       perfect
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :    Undetected    Undetected    Undetected    Undetected
+Middle            :            0%            0%          100%         Wrong
+End               :           86%           14%            0%       Perfect
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            B3
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         -0.03         -0.12
+Beats difference: :         -0.05         -0.25
+Evaluation:       :       perfect         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :            0%            0%          100%         Wrong
+Middle            :    Undetected    Undetected    Undetected    Undetected
+End               :    Undetected    Undetected    Undetected    Undetected
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            C4
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         -0.12         +0.11
+Beats difference: :         -0.25         +0.22
+Evaluation:       :         wrong         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :    Undetected    Undetected    Undetected    Undetected
+Middle            :           14%            5%           81%         Wrong
+End               :            0%          100%            0%          Okay
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            D4
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.11         +0.11
+Beats difference: :         +0.22         +0.21
+Evaluation:       :         wrong         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :           50%           50%            0%          Okay
+Middle            :          100%            0%            0%       Perfect
+End               :    Undetected    Undetected    Undetected    Undetected
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            E4
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         -0.05         +0.14
+Beats difference: :         -0.11         +0.28
+Evaluation:       :          okay         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :            0%            0%          100%         Wrong
+Middle            :            0%           10%           90%         Wrong
+End               :            0%            0%          100%         Wrong
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :           F#4
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.14         +0.15
+Beats difference: :         +0.28         +0.30
+Evaluation:       :         wrong         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :          100%            0%            0%       Perfect
+Middle            :            0%            0%          100%         Wrong
+End               :    Undetected    Undetected    Undetected    Undetected
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            G4
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.15         +0.05
+Beats difference: :         +0.30         +0.10
+Evaluation:       :         wrong          okay
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :    Undetected    Undetected    Undetected    Undetected
+Middle            :    Undetected    Undetected    Undetected    Undetected
+End               :    Undetected    Undetected    Undetected    Undetected
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            A4
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.05         +0.14
+Beats difference: :         +0.10         +0.29
+Evaluation:       :          okay         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :    Undetected    Undetected    Undetected    Undetected
+Middle            :            0%            0%          100%         Wrong
+End               :            0%            0%          100%         Wrong
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            B4
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.14         +0.15
+Beats difference: :         +0.29         +0.29
+Evaluation:       :         wrong         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :            0%            0%          100%         Wrong
+Middle            :            0%            0%          100%         Wrong
+End               :            0%            0%          100%         Wrong
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            C5
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.15         +0.08
+Beats difference: :         +0.29         +0.15
+Evaluation:       :         wrong          okay
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :    Undetected    Undetected    Undetected    Undetected
+Middle            :            0%            0%          100%         Wrong
+End               :            0%            0%          100%         Wrong
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            D5
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         -0.08         +0.14
+Beats difference: :         -0.17         +0.27
+Evaluation:       :          okay         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :            0%            0%          100%         Wrong
+Middle            :            0%            0%          100%         Wrong
+End               :            0%            0%          100%         Wrong
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            E5
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.14         +0.13
+Beats difference: :         +0.27         +0.26
+Evaluation:       :         wrong         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :            0%            0%          100%         Wrong
+Middle            :            0%            0%          100%         Wrong
+End               :            0%            0%          100%         Wrong
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :           F#5
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.13         +0.13
+Beats difference: :         +0.26         +0.25
+Evaluation:       :         wrong         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :            0%            0%          100%         Wrong
+Middle            :            0%            0%          100%         Wrong
+End               :            0%            0%          100%         Wrong
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            G5
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.13         +0.10
+Beats difference: :         +0.25         +0.21
+Evaluation:       :         wrong         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :    Undetected    Undetected    Undetected    Undetected
+Middle            :            0%            0%          100%         Wrong
+End               :    Undetected    Undetected    Undetected    Undetected
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            23
+Note              :            A5
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.10         +0.03
+Beats difference: :         +0.21         +0.05
+Evaluation:       :         wrong       perfect
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :            0%            0%          100%         Wrong
+Middle            :            0%            0%          100%         Wrong
+End               :    Undetected    Undetected    Undetected    Undetected
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            24
+Note              :            B5
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.03         +0.13
+Beats difference: :         +0.05         +0.25
+Evaluation:       :       perfect         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :            9%            9%           82%         Wrong
+Middle            :           33%            6%           61%         Wrong
+End               :            0%            0%          100%         Wrong
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            24
+Note              :            C6
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.13         +0.14
+Beats difference: :         +0.25         +0.29
+Evaluation:       :         wrong         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :            0%            0%          100%         Wrong
+Middle            :            0%            0%          100%         Wrong
+End               :    Undetected    Undetected    Undetected    Undetected
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            24
+Note              :            D6
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.14         +0.09
+Beats difference: :         +0.29         +0.18
+Evaluation:       :         wrong          okay
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :            0%            0%          100%         Wrong
+Middle            :            0%            0%          100%         Wrong
+End               :            0%            0%          100%         Wrong
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            24
+Note              :            E6
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.04         +0.11
+Beats difference: :         +0.07         +0.22
+Evaluation:       :       perfect         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :           67%           11%           22%          Okay
+Middle            :            0%            0%          100%         Wrong
+End               :    Undetected    Undetected    Undetected    Undetected
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            24
+Note              :           F#6
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         +0.11         -0.02
+Beats difference: :         +0.22         -0.03
+Evaluation:       :         wrong       perfect
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :    Undetected    Undetected    Undetected    Undetected
+Middle            :    Undetected    Undetected    Undetected    Undetected
+End               :    Undetected    Undetected    Undetected    Undetected
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+Measure           :            24
+Note              :            G6
+----------------------------------------------------------------------------
+Rhythm            :         Onset        Offset
+Time difference   :         -0.02         -0.13
+Beats difference: :         -0.03         -0.25
+Evaluation:       :       perfect         wrong
+----------------------------------------------------------------------------
+Intonation        :       Perfect          Okay         Wrong       Overall
+Start             :            0%          100%            0%          Okay
+Middle            :           50%           50%            0%          Okay
+End               :    Undetected    Undetected    Undetected    Undetected
+----------------------------------------------------------------------------
